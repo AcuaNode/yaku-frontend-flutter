@@ -1,6 +1,4 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 import '../infrastructure/auth_provider.dart';
 import '../presentation/pages/login_page.dart';
 import '../presentation/pages/register_page.dart';
@@ -11,6 +9,11 @@ import '../presentation/pages/equipment_page.dart';
 import '../presentation/pages/operators_page.dart';
 import '../presentation/pages/notifications_page.dart';
 import '../presentation/pages/settings_page.dart';
+import '../presentation/pages/operator/operator_home_page.dart';
+import '../presentation/pages/operator/operator_pond_detail_page.dart';
+import '../presentation/pages/operator/operator_history_page.dart';
+import '../presentation/pages/operator/operator_alerts_page.dart';
+import '../presentation/pages/operator/operator_profile_page.dart';
 
 GoRouter buildRouter(AuthProvider auth) {
   return GoRouter(
@@ -19,12 +22,16 @@ GoRouter buildRouter(AuthProvider auth) {
     //   final loggedIn = auth.isAuthenticated;
     //   final isAuth = state.matchedLocation == '/login' || state.matchedLocation == '/register';
     //   if (!loggedIn && !isAuth) return '/login';
-    //   if (loggedIn && isAuth) return '/dashboard';
+    //   if (loggedIn && isAuth) {
+    //     return auth.user?.role == 'OPERATOR' ? '/op/home' : '/dashboard';
+    //   }
     //   return null;
     // },
     routes: [
       GoRoute(path: '/login', builder: (_, __) => const LoginPage()),
       GoRoute(path: '/register', builder: (_, __) => const RegisterPage()),
+
+      // Admin routes
       GoRoute(path: '/dashboard', builder: (_, __) => const DashboardPage()),
       GoRoute(path: '/estanques', builder: (_, __) => const PondsPage()),
       GoRoute(
@@ -35,7 +42,22 @@ GoRouter buildRouter(AuthProvider auth) {
       GoRoute(path: '/operadores', builder: (_, __) => const OperatorsPage()),
       GoRoute(path: '/notificaciones', builder: (_, __) => const NotificationsPage()),
       GoRoute(path: '/configuracion', builder: (_, __) => const SettingsPage()),
+
+      // Operator mobile routes
+      GoRoute(path: '/op/home', builder: (_, __) => const OperatorHomePage()),
+      GoRoute(
+        path: '/op/pond/:id',
+        builder: (_, state) =>
+            OperatorPondDetailPage(pondId: int.parse(state.pathParameters['id']!)),
+      ),
+      GoRoute(
+        path: '/op/history/:id',
+        builder: (_, state) =>
+            OperatorHistoryPage(pondId: int.parse(state.pathParameters['id']!)),
+      ),
+      GoRoute(path: '/op/alerts', builder: (_, __) => const OperatorAlertsPage()),
+      GoRoute(path: '/op/profile', builder: (_, __) => const OperatorProfilePage()),
     ],
-    initialLocation: '/dashboard',
+    initialLocation: '/op/home',
   );
 }

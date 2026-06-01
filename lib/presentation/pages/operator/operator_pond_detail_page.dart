@@ -1,0 +1,320 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../../config/theme.dart';
+import '../../../infrastructure/pond_service.dart';
+import '../../../infrastructure/equipment_service.dart';
+import '../../../domain/pond.dart';
+import '../../../domain/equipment.dart';
+import '../../widgets/operator_layout.dart';
+
+class OperatorPondDetailPage extends StatefulWidget {
+  final int pondId;
+  const OperatorPondDetailPage({super.key, required this.pondId});
+  @override
+  State<OperatorPondDetailPage> createState() => _State();
+}
+
+class _State extends State<OperatorPondDetailPage> {
+  Pond? _pond;
+  List<SensorReading> _status = [];
+  List<HistoricalReading> _historical = [];
+  List<Equipment> _equipment = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    try {
+      final results = await Future.wait([
+        getPond(widget.pondId),
+        getTelemetryStatus(widget.pondId),
+        getTelemetryHistorical(widget.pondId),
+        getEquipment(),
+      ]);
+      if (mounted) {
+        setState(() {
+          _pond = results[0] as Pond;
+          _status = results[1] as List<SensorReading>;
+          _historical = results[2] as List<HistoricalReading>;
+          _equipment = (results[3] as List<Equipment>)
+              .where((e) => e.pondId == widget.pondId)
+              .toList();
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  SensorReading? _get(String type) {
+    try {
+      return _status.firstWhere((r) => r.sensorType.toUpperCase().contains(type));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  List<double> _bars(String type) {
+    final vals = _historical
+        .where((h) => h.sensorType.toUpperCase().contains(type))
+        .map((h) => h.avgValue)
+        .toList();
+    return vals.length > 8 ? vals.sublist(vals.length - 8) : vals;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return OperatorLayout(
+      currentRoute: '/op/home',
+      child: SafeArea(
+        child: Column(children: [
+          Container(
+            color: kSurface,
+            padding: const EdgeInsets.fromLTRB(4, 8, 16, 8),
+            child: Row(children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back_ios, color: kNavy, size: 20),
+                onPressed: () => context.go('/op/home'),
+              ),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(
+                    _pond?.name ?? 'Estanque',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: kNavy),
+                  ),
+                  Row(children: [
+                    Container(
+                      width: 8, height: 8,
+                      margin: const EdgeInsets.only(right: 5),
+                      decoration: const BoxDecoration(color: kSuccess, shape: BoxShape.circle),
+                    ),
+                    const Text('EN VIVO',
+                        style: TextStyle(
+                            fontSize: 11, fontWeight: FontWeight.w700,
+                            color: kSuccess, letterSpacing: 0.8)),
+                  ]),
+                ]),
+              ),
+            ]),
+          ),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator(color: kPrimary))
+                : RefreshIndicator(
+                    onRefresh: _load,
+                    child: ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        _MetricCard(
+                          label: 'TEMPERATURA',
+                          reading: _get('TEMP'),
+                          unit: '°C',
+                          bars: _bars('TEMP'),
+                          featured: true,
+                        ),
+                        const SizedBox(height: 12),
+                        _MetricCard(
+                          label: 'NIVEL DE PH',
+                          reading: _get('PH'),
+                          unit: '',
+                          bars: _bars('PH'),
+                        ),
+                        const SizedBox(height: 12),
+                        _MetricCard(
+                          label: 'OXÍGENO DISUELTO',
+                          reading: _get('OX'),
+                          unit: 'mg/L',
+                          bars: _bars('OX'),
+                        ),
+                        const SizedBox(height: 24),
+                        const Text('Sensores en este estanque',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: kNavy)),
+                        const SizedBox(height: 12),
+                        if (_equipment.isEmpty)
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: kSurface,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: kBorder),
+                            ),
+                            child: const Text('No hay equipos vinculados',
+                                style: TextStyle(color: kTextSecondary)),
+                          )
+                        else
+                          ..._equipment.map((e) => _EquipRow(eq: e)),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.bar_chart, size: 18),
+                            label: const Text('Ver historial completo'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: kNavy,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            onPressed: () => context.go('/op/history/${widget.pondId}'),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+class _MetricCard extends StatelessWidget {
+  final String label;
+  final SensorReading? reading;
+  final String unit;
+  final List<double> bars;
+  final bool featured;
+
+  const _MetricCard({
+    required this.label,
+    required this.reading,
+    required this.unit,
+    required this.bars,
+    this.featured = false,
+  });
+
+  String get _value {
+    if (reading == null) return '--';
+    return reading!.value.toStringAsFixed(1);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = featured ? kNavy : kSurface;
+    final textPrimary = featured ? Colors.white : kNavy;
+    final textSub = featured ? const Color(0xFF94A3B8) : kTextSecondary;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+        border: featured ? null : Border.all(color: kBorder),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Text(label,
+              style: TextStyle(
+                  fontSize: 11, fontWeight: FontWeight.w600,
+                  color: textSub, letterSpacing: 1)),
+          const Spacer(),
+          const Icon(Icons.trending_up, size: 14, color: kSuccess),
+          const SizedBox(width: 4),
+          const Text('+0.5° h',
+              style: TextStyle(fontSize: 11, color: kSuccess, fontWeight: FontWeight.w600)),
+        ]),
+        const SizedBox(height: 8),
+        Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
+          Text(_value, style: TextStyle(fontSize: 38, fontWeight: FontWeight.bold, color: textPrimary)),
+          if (unit.isNotEmpty) ...[
+            const SizedBox(width: 4),
+            Text(unit, style: TextStyle(fontSize: 16, color: textSub, fontWeight: FontWeight.w500)),
+          ],
+        ]),
+        const SizedBox(height: 12),
+        _MiniBarChart(values: bars, featured: featured),
+      ]),
+    );
+  }
+}
+
+class _MiniBarChart extends StatelessWidget {
+  final List<double> values;
+  final bool featured;
+  const _MiniBarChart({required this.values, this.featured = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final displayValues = values.isEmpty
+        ? <double>[0.5, 0.6, 0.5, 0.7, 0.65, 0.8, 0.75, 0.9]
+        : values;
+    final max = displayValues.reduce((a, b) => a > b ? a : b);
+    final barColor = featured
+        ? const Color(0xFF0E7490)
+        : const Color(0xFFCBD5E1);
+
+    return SizedBox(
+      height: 36,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: displayValues.map((v) {
+          final ratio = max > 0 ? v / max : 0.5;
+          final h = (ratio * 34).clamp(4.0, 34.0);
+          return Expanded(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              height: h,
+              decoration: BoxDecoration(
+                color: barColor,
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _EquipRow extends StatelessWidget {
+  final Equipment eq;
+  const _EquipRow({required this.eq});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: kBorder),
+      ),
+      child: Row(children: [
+        Container(
+          width: 42, height: 42,
+          decoration: BoxDecoration(color: kNavy, borderRadius: BorderRadius.circular(8)),
+          child: Icon(
+            eq.isSensor ? Icons.sensors : Icons.wifi_tethering,
+            color: Colors.white, size: 20,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(eq.name,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: kNavy)),
+          Text(eq.type,
+              style: const TextStyle(fontSize: 12, color: kTextSecondary)),
+        ])),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: kPrimary.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            'ACTIVO',
+            style: TextStyle(
+                fontSize: 11, fontWeight: FontWeight.w700,
+                color: kPrimaryDark),
+          ),
+        ),
+      ]),
+    );
+  }
+}
