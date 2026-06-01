@@ -15,13 +15,13 @@ import '../presentation/pages/settings_page.dart';
 GoRouter buildRouter(AuthProvider auth) {
   return GoRouter(
     refreshListenable: auth,
-    redirect: (context, state) {
-      final loggedIn = auth.isAuthenticated;
-      final isAuth = state.matchedLocation == '/login' || state.matchedLocation == '/register';
-      if (!loggedIn && !isAuth) return '/login';
-      if (loggedIn && isAuth) return '/dashboard';
-      return null;
-    },
+    // redirect: (context, state) {
+    //   final loggedIn = auth.isAuthenticated;
+    //   final isAuth = state.matchedLocation == '/login' || state.matchedLocation == '/register';
+    //   if (!loggedIn && !isAuth) return '/login';
+    //   if (loggedIn && isAuth) return '/dashboard';
+    //   return null;
+    // },
     routes: [
       GoRoute(path: '/login', builder: (_, __) => const LoginPage()),
       GoRoute(path: '/register', builder: (_, __) => const RegisterPage()),
@@ -36,6 +36,6 @@ GoRouter buildRouter(AuthProvider auth) {
       GoRoute(path: '/notificaciones', builder: (_, __) => const NotificationsPage()),
       GoRoute(path: '/configuracion', builder: (_, __) => const SettingsPage()),
     ],
-    initialLocation: '/login',
+    initialLocation: '/dashboard',
   );
 }
