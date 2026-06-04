@@ -18,15 +18,15 @@ import '../presentation/pages/operator/operator_profile_page.dart';
 GoRouter buildRouter(AuthProvider auth) {
   return GoRouter(
     refreshListenable: auth,
-    // redirect: (context, state) {
-    //   final loggedIn = auth.isAuthenticated;
-    //   final isAuth = state.matchedLocation == '/login' || state.matchedLocation == '/register';
-    //   if (!loggedIn && !isAuth) return '/login';
-    //   if (loggedIn && isAuth) {
-    //     return auth.user?.role == 'OPERATOR' ? '/op/home' : '/dashboard';
-    //   }
-    //   return null;
-    // },
+    redirect: (context, state) {
+      final loggedIn = auth.isAuthenticated;
+      final isAuth = state.matchedLocation == '/login' || state.matchedLocation == '/register';
+      if (!loggedIn && !isAuth) return '/login';
+      if (loggedIn && isAuth) {
+        return auth.user?.role == 'OPERATOR' ? '/op/home' : '/dashboard';
+      }
+      return null;
+    },
     routes: [
       GoRoute(path: '/login', builder: (_, __) => const LoginPage()),
       GoRoute(path: '/register', builder: (_, __) => const RegisterPage()),
@@ -58,6 +58,6 @@ GoRouter buildRouter(AuthProvider auth) {
       GoRoute(path: '/op/alerts', builder: (_, __) => const OperatorAlertsPage()),
       GoRoute(path: '/op/profile', builder: (_, __) => const OperatorProfilePage()),
     ],
-    initialLocation: '/op/home',
+    initialLocation: '/login',
   );
 }
