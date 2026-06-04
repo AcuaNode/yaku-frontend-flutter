@@ -90,25 +90,8 @@ Future<User> register({
     if (farmToken != null && farmToken.isNotEmpty) 'farmToken': farmToken,
   };
 
-  final res = await httpClient.post(ApiEndpoints.signup, data: body);
-
-  final token = res.data is String
-      ? res.data as String
-      : (res.data['token'] ?? res.data['accessToken'] ?? '') as String;
-
-  final payload = _decodeJwt(token);
-  final id = int.tryParse((res.data['id'] ?? payload['id'] ?? 0).toString()) ?? 0;
-  final mappedRole = _mapRole(res.data['role'] ?? res.data['roles'] ?? payload['role']);
-
-  await TokenStorage.saveSession(
-    token: token,
-    userId: id,
-    username: username,
-    firstName: firstName,
-    lastName: lastName,
-    email: email,
-    role: mappedRole,
-  );
-
-  return User(id: id, username: username, firstName: firstName, lastName: lastName, email: email, role: mappedRole);
+  // Signup only returns a plain string (201), not a JWT.
+  // Auto-login after success to get the real token.
+  await httpClient.post(ApiEndpoints.signup, data: body);
+  return login(username, password);
 }

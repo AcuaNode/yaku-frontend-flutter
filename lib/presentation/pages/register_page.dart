@@ -43,7 +43,10 @@ class _RegisterPageState extends State<RegisterPage> {
       role: _role,
       farmToken: _role == 'OPERATOR' ? _farmTokenCtrl.text.trim() : null,
     );
-    if (ok && mounted) context.go('/dashboard');
+    if (ok && mounted) {
+      final role = context.read<AuthProvider>().user?.role;
+      context.go(role == 'OPERATOR' ? '/op/home' : '/dashboard');
+    }
   }
 
   @override
