@@ -2,14 +2,14 @@ import '../config/api_config.dart';
 import '../domain/equipment.dart';
 import 'http_client.dart';
 
-Future<List<Equipment>> getEquipment() async {
-  final res = await httpClient.get(ApiEndpoints.equipmentBase);
+Future<List<Equipment>> getEquipment({int? farmId}) async {
+  final res = await httpClient.get(ApiEndpoints.equipmentBase, queryParameters: farmId != null ? {'farmId': farmId} : null);
   final list = res.data as List? ?? [];
   return list.map((e) => Equipment.fromJson(e as Map<String, dynamic>)).toList();
 }
 
-Future<Equipment> createEquipment({required String type, required String name, required String physicalCode}) async {
-  final res = await httpClient.post(ApiEndpoints.equipmentBase, data: {'type': type, 'name': name, 'physicalCode': physicalCode});
+Future<Equipment> createEquipment({required int farmId, required String type, required String name, required String physicalCode}) async {
+  final res = await httpClient.post(ApiEndpoints.equipmentBase, data: {'farmId': farmId, 'type': type, 'name': name, 'physicalCode': physicalCode});
   return Equipment.fromJson(res.data as Map<String, dynamic>);
 }
 

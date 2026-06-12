@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "707265405802",
+    "project_id": "yakucontrol",
+    "storage_bucket": "yakucontrol.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:707265405802:android:14828bb924a3898285bb13",
+        "android_client_info": {
+          "package_name": "io.github.acuanode.yaku_frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDm9ob7nW3VdUOkk2CfoVBrXd7-UfCZScM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

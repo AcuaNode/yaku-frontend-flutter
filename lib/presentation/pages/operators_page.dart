@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../infrastructure/auth_provider.dart';
 import '../../infrastructure/farm_service.dart';
-import 'package:dio/dio.dart';
 import '../../infrastructure/http_client.dart';
 import '../../config/api_config.dart';
 import '../widgets/dashboard_layout.dart';

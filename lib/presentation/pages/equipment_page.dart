@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../domain/equipment.dart';
+import '../../infrastructure/auth_provider.dart';
 import '../../infrastructure/equipment_service.dart';
+import '../../infrastructure/farm_service.dart';
 import '../widgets/dashboard_layout.dart';
 
 class EquipmentPage extends StatefulWidget {
@@ -13,6 +16,7 @@ class EquipmentPage extends StatefulWidget {
 class _EquipmentPageState extends State<EquipmentPage> {
   List<Equipment> _equipment = [];
   bool _loading = true;
+  int? _farmId;
   bool _showCreate = false;
   final _nameCtrl = TextEditingController();
   final _codeCtrl = TextEditingController();
@@ -23,17 +27,21 @@ class _EquipmentPageState extends State<EquipmentPage> {
   void initState() { super.initState(); _load(); }
 
   Future<void> _load() async {
+    final userId = context.read<AuthProvider>().user?.id ?? 0;
     try {
-      final eq = await getEquipment();
+      final farm = await getUserFarm(userId);
+      if (farm == null) { setState(() => _loading = false); return; }
+      _farmId = farm.id;
+      final eq = await getEquipment(farmId: _farmId);
       setState(() { _equipment = eq; _loading = false; });
     } catch (_) { setState(() => _loading = false); }
   }
 
   Future<void> _create() async {
-    if (_nameCtrl.text.trim().isEmpty || _codeCtrl.text.trim().isEmpty) return;
+    if (_nameCtrl.text.trim().isEmpty || _codeCtrl.text.trim().isEmpty || _farmId == null) return;
     setState(() => _creating = true);
     try {
-      await createEquipment(type: _type, name: _nameCtrl.text.trim(), physicalCode: _codeCtrl.text.trim());
+      await createEquipment(farmId: _farmId!, type: _type, name: _nameCtrl.text.trim(), physicalCode: _codeCtrl.text.trim());
       _nameCtrl.clear(); _codeCtrl.clear();
       setState(() { _showCreate = false; _creating = false; });
       _load();

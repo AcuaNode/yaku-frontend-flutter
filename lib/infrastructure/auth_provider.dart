@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../domain/user.dart';
 import '../utils/token_storage.dart';
 import 'auth_service.dart' as svc;
+import 'fcm_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   User? _user;
@@ -26,6 +27,9 @@ class AuthProvider extends ChangeNotifier {
         email: info['email'] ?? '',
         role: info['role'] ?? 'ADMIN',
       );
+      if (_user!.id != 0) {
+        FcmService.initializeAndSendToken(_user!.id);
+      }
       notifyListeners();
     }
   }
@@ -36,6 +40,9 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
     try {
       _user = await svc.login(username, password);
+      if (_user != null) {
+        FcmService.initializeAndSendToken(_user!.id);
+      }
       return true;
     } catch (e) {
       _error = _parseError(e, fallback: 'Usuario o contraseña incorrectos');

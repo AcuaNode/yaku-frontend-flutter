@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:dio/dio.dart';
 import '../config/api_config.dart';
 import '../domain/user.dart';
 import '../utils/token_storage.dart';
@@ -89,4 +88,18 @@ Future<User> register({
   // Auto-login after success to get the real token.
   await httpClient.post(ApiEndpoints.signup, data: body);
   return login(username, password);
+}
+
+Future<User> getUserById(int id) async {
+  final res = await httpClient.get(ApiEndpoints.userById(id));
+  final data = res.data as Map<String, dynamic>;
+  final roles = data['roles'] as List?;
+  return User(
+    id: data['id'] ?? id,
+    username: data['username'] ?? '',
+    firstName: data['firstName'] ?? '',
+    lastName: data['lastName'] ?? '',
+    email: data['email'] ?? '',
+    role: roles != null && roles.isNotEmpty ? roles[0].toString() : (data['role']?.toString() ?? ''),
+  );
 }

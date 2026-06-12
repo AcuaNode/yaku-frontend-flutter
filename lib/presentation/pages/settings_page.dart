@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
+import '../../domain/user.dart';
 import '../../infrastructure/auth_provider.dart';
+import '../../infrastructure/auth_service.dart';
 import '../../infrastructure/http_client.dart';
 import '../../config/api_config.dart';
 import '../widgets/dashboard_layout.dart';
@@ -21,6 +23,28 @@ class _SettingsPageState extends State<SettingsPage> {
   String? _passError;
   String? _passSuccess;
   bool _showCurrent = false, _showNew = false, _showConfirm = false;
+  User? _liveUser;
+  bool _loadingUser = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadUser());
+  }
+
+  Future<void> _loadUser() async {
+    final userId = context.read<AuthProvider>().user?.id ?? 0;
+    if (userId == 0) {
+      setState(() => _loadingUser = false);
+      return;
+    }
+    try {
+      final u = await getUserById(userId);
+      setState(() { _liveUser = u; _loadingUser = false; });
+    } catch (_) {
+      setState(() => _loadingUser = false);
+    }
+  }
 
   Future<void> _changePassword() async {
     setState(() { _passError = null; _passSuccess = null; });
@@ -46,7 +70,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final user = auth.user;
+    final user = _liveUser ?? auth.user;
     return DashboardLayout(
       currentRoute: '/configuracion',
       child: SingleChildScrollView(
@@ -60,7 +84,10 @@ class _SettingsPageState extends State<SettingsPage> {
             const Text('Perfil', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: kTextPrimary)),
             const SizedBox(height: 16),
             Row(children: [
-              CircleAvatar(backgroundColor: kPrimary, radius: 28, child: Text(user?.firstName.isNotEmpty == true ? user!.firstName[0].toUpperCase() : '?', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold))),
+              if (_loadingUser)
+                const CircleAvatar(backgroundColor: kPrimary, radius: 28, child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)))
+              else
+                CircleAvatar(backgroundColor: kPrimary, radius: 28, child: Text(user?.firstName.isNotEmpty == true ? user!.firstName[0].toUpperCase() : '?', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold))),
               const SizedBox(width: 16),
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(user?.fullName ?? '', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: kTextPrimary)),

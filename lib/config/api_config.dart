@@ -1,4 +1,8 @@
-const String apiBaseUrl = 'http://localhost:8080/api';
+//const String apiBaseUrl = 'https://yaku-back-b5ggakd7awhucvaq.canadacentral-01.azurewebsites.net/api';
+
+import 'package:yaku_frontend/config/environment.dart';
+
+final String apiBaseUrl = Environment.baseUrl;
 
 class ApiEndpoints {
   static const signin = '/v1/users/signin';
@@ -14,6 +18,8 @@ class ApiEndpoints {
   static String notifications(int userId) => '/v1/users/$userId/notifications';
   static String markNotificationsRead(int userId) => '/v1/users/$userId/notifications/read';
   static String changePassword(int userId) => '/v1/users/$userId/password';
+  static String deviceTokens(int userId) => '/v1/users/$userId/device-tokens';
+  static String userById(int id) => '/v1/users/$id';
   static String farmById(int id) => '/v1/farms/$id';
   static String createFarmToken(int farmId) => '/v1/iam/farms/$farmId/tokens';
   static String pondsByFarm(int farmId) => '/v1/ponds/farm/$farmId';
