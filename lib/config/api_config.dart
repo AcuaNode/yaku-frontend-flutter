@@ -1,4 +1,4 @@
-const String apiBaseUrl = 'https://yaku-back-b5ggakd7awhucvaq.canadacentral-01.azurewebsites.net/api';
+const String apiBaseUrl = 'http://localhost:8080/api';
 
 class ApiEndpoints {
   static const signin = '/v1/users/signin';
@@ -17,6 +17,7 @@ class ApiEndpoints {
   static String farmById(int id) => '/v1/farms/$id';
   static String createFarmToken(int farmId) => '/v1/iam/farms/$farmId/tokens';
   static String pondsByFarm(int farmId) => '/v1/ponds/farm/$farmId';
+  static String pondsByOperator(int operatorId) => '/v1/ponds/operator/$operatorId';
   static String pondById(int id) => '/v1/ponds/$id';
   static String pondAssign(int pondId) => '/v1/ponds/$pondId/assignments';
   static String pondDeassign(int pondId, int operatorId) => '/v1/ponds/$pondId/deassignments/$operatorId';

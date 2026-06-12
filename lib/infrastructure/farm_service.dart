@@ -21,7 +21,20 @@ Future<Farm?> getUserFarm(int userId) async {
     final list = res.data as List? ?? [];
     if (list.isEmpty) return null;
     final farms = list.map((e) => Farm.fromJson(e as Map<String, dynamic>)).toList();
-    return farms.firstWhere((f) => f.ownerId == userId, orElse: () => farms.first);
+
+    // Check ownership first (ADMIN)
+    final owned = farms.cast<Farm?>().firstWhere((f) => f!.ownerId == userId, orElse: () => null);
+    if (owned != null) return owned;
+
+    // For OPERATOR: find farm they're assigned to
+    for (final farm in farms) {
+      try {
+        final usersRes = await httpClient.get(ApiEndpoints.usersByFarm(farm.id));
+        final users = usersRes.data as List? ?? [];
+        if (users.any((u) => (u['id'] as num?)?.toInt() == userId)) return farm;
+      } catch (_) {}
+    }
+    return null;
   } catch (_) { return null; }
 }
 

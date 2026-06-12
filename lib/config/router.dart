@@ -20,11 +20,17 @@ GoRouter buildRouter(AuthProvider auth) {
     refreshListenable: auth,
     redirect: (context, state) {
       final loggedIn = auth.isAuthenticated;
-      final isAuth = state.matchedLocation == '/login' || state.matchedLocation == '/register';
+      final isOperator = auth.user?.role == 'OPERATOR';
+      final loc = state.matchedLocation;
+      final isAuth = loc == '/login' || loc == '/register';
+
       if (!loggedIn && !isAuth) return '/login';
-      if (loggedIn && isAuth) {
-        return auth.user?.role == 'OPERATOR' ? '/op/home' : '/dashboard';
-      }
+      if (loggedIn && isAuth) return isOperator ? '/op/home' : '/dashboard';
+
+      // Enforce role separation: OPERATOR can't access admin routes and vice versa
+      if (loggedIn && isOperator && !loc.startsWith('/op/')) return '/op/home';
+      if (loggedIn && !isOperator && loc.startsWith('/op/')) return '/dashboard';
+
       return null;
     },
     routes: [

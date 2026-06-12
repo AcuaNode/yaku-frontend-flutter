@@ -26,7 +26,10 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _submit() async {
     final auth = context.read<AuthProvider>();
     final ok = await auth.login(_usernameCtrl.text.trim(), _passwordCtrl.text);
-    if (ok && mounted) context.go('/dashboard');
+    if (ok && mounted) {
+      final role = context.read<AuthProvider>().user?.role;
+      context.go(role == 'OPERATOR' ? '/op/home' : '/dashboard');
+    }
   }
 
   @override

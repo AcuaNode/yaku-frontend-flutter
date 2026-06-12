@@ -5,8 +5,9 @@ class Pond {
   final String species;
   final double volume;
   final String status;
+  final int? assignedOperatorId;
 
-  const Pond({required this.id, required this.farmId, required this.name, required this.species, required this.volume, required this.status});
+  const Pond({required this.id, required this.farmId, required this.name, required this.species, required this.volume, required this.status, this.assignedOperatorId});
 
   factory Pond.fromJson(Map<String, dynamic> j) => Pond(
     id: j['id'] as int,
@@ -15,6 +16,7 @@ class Pond {
     species: j['species']?.toString() ?? '',
     volume: (j['volume'] as num?)?.toDouble() ?? 0,
     status: j['status']?.toString() ?? 'ACTIVE',
+    assignedOperatorId: (j['assignedOperatorId'] as num?)?.toInt(),
   );
 }
 

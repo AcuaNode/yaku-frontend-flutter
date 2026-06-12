@@ -30,23 +30,23 @@ class _OperatorHomePageState extends State<OperatorHomePage> {
     final userId = context.read<AuthProvider>().user?.id ?? 0;
     setState(() => _loading = true);
     try {
-      final farm = await getUserFarm(userId);
-      if (farm != null && mounted) {
-        final ponds = await getPondsByFarm(farm.id);
-        final Map<int, List<SensorReading>> telem = {};
-        await Future.wait(ponds.map((p) async {
-          telem[p.id] = await getTelemetryStatus(p.id);
-        }));
-        if (mounted) {
-          setState(() {
-            _farm = farm;
-            _ponds = ponds;
-            _telemetry = telem;
-            _loading = false;
-          });
-        }
-      } else {
-        if (mounted) setState(() => _loading = false);
+      final results = await Future.wait([
+        getUserFarm(userId),
+        getPondsByOperator(userId),
+      ]);
+      final farm = results[0] as Farm?;
+      final ponds = results[1] as List<Pond>;
+      final Map<int, List<SensorReading>> telem = {};
+      await Future.wait(ponds.map((p) async {
+        telem[p.id] = await getTelemetryStatus(p.id);
+      }));
+      if (mounted) {
+        setState(() {
+          _farm = farm;
+          _ponds = ponds;
+          _telemetry = telem;
+          _loading = false;
+        });
       }
     } catch (_) {
       if (mounted) setState(() => _loading = false);

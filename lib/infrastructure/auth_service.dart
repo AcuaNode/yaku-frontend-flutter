@@ -42,21 +42,16 @@ Future<User> login(String username, String password) async {
     'password': password,
   });
 
-  final token = res.data is String
-      ? res.data as String
-      : (res.data['token'] ?? res.data['accessToken'] ?? '') as String;
+  final data = res.data as Map<String, dynamic>;
+  final token = (data['token'] ?? '') as String;
 
-  final payload = _decodeJwt(token);
-  final profile = await _fetchProfile(username);
-
-  final id = int.tryParse(
-        (profile['id'] ?? res.data['id'] ?? payload['id'] ?? 0).toString(),
-      ) ??
-      0;
-  final role = _mapRole(profile['role'] ?? profile['roles'] ?? payload['role'] ?? payload['roles']);
-  final firstName = (profile['firstName'] ?? payload['firstName'] ?? '').toString();
-  final lastName = (profile['lastName'] ?? payload['lastName'] ?? '').toString();
-  final email = (profile['email'] ?? payload['email'] ?? '').toString();
+  // user fields are nested under data['user']
+  final user = (data['user'] as Map<String, dynamic>?) ?? {};
+  final id = int.tryParse((user['id'] ?? 0).toString()) ?? 0;
+  final role = _mapRole(user['roles'] ?? user['role']);
+  final firstName = (user['firstName'] ?? '').toString();
+  final lastName = (user['lastName'] ?? '').toString();
+  final email = (user['email'] ?? '').toString();
 
   await TokenStorage.saveSession(
     token: token,

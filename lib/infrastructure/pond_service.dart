@@ -8,6 +8,12 @@ Future<List<Pond>> getPondsByFarm(int farmId) async {
   return list.map((e) => Pond.fromJson(e as Map<String, dynamic>)).toList();
 }
 
+Future<List<Pond>> getPondsByOperator(int operatorId) async {
+  final res = await httpClient.get(ApiEndpoints.pondsByOperator(operatorId));
+  final list = res.data as List? ?? [];
+  return list.map((e) => Pond.fromJson(e as Map<String, dynamic>)).toList();
+}
+
 Future<Pond> getPond(int id) async {
   final res = await httpClient.get(ApiEndpoints.pondById(id));
   return Pond.fromJson(res.data as Map<String, dynamic>);
@@ -44,4 +50,26 @@ Future<void> ingestReading({required int sensorId, required int pondId, required
     'sensorId': sensorId, 'pondId': pondId, 'sensorType': sensorType,
     'value': value, 'unit': unit, 'timestamp': DateTime.now().toIso8601String(),
   });
+}
+
+Future<Pond> assignOperatorToPond(int pondId, int operatorId) async {
+  final res = await httpClient.post(ApiEndpoints.pondAssign(pondId), data: {'operatorId': operatorId});
+  return Pond.fromJson(res.data as Map<String, dynamic>);
+}
+
+Future<Pond> deassignOperatorFromPond(int pondId, int operatorId) async {
+  final res = await httpClient.delete(ApiEndpoints.pondDeassign(pondId, operatorId));
+  return Pond.fromJson(res.data as Map<String, dynamic>);
+}
+
+Future<List<Map<String, dynamic>>> getOperators() async {
+  final res = await httpClient.get(ApiEndpoints.usersBase);
+  final list = res.data as List? ?? [];
+  return list
+      .map((e) => e as Map<String, dynamic>)
+      .where((u) {
+        final roles = u['roles'];
+        return roles is List && roles.contains('OPERATOR');
+      })
+      .toList();
 }
