@@ -76,7 +76,7 @@ class _EquipmentPageState extends State<EquipmentPage> {
                 onRefresh: _load,
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                       const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

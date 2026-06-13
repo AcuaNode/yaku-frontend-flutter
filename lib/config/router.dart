@@ -9,6 +9,7 @@ import '../presentation/pages/admin/equipment_page.dart';
 import '../presentation/pages/admin/operators_page.dart';
 import '../presentation/pages/admin/notifications_page.dart';
 import '../presentation/pages/admin/settings_page.dart';
+import '../presentation/pages/admin/subscriptions_page.dart';
 import '../presentation/pages/operator/operator_home_page.dart';
 import '../presentation/pages/operator/operator_pond_detail_page.dart';
 import '../presentation/pages/operator/operator_history_page.dart';
@@ -48,6 +49,7 @@ GoRouter buildRouter(AuthProvider auth) {
       GoRoute(path: '/operadores', builder: (_, __) => const OperatorsPage()),
       GoRoute(path: '/notificaciones', builder: (_, __) => const NotificationsPage()),
       GoRoute(path: '/configuracion', builder: (_, __) => const SettingsPage()),
+      GoRoute(path: '/suscripciones', builder: (_, __) => const SubscriptionsPage()),
 
       // Operator mobile routes
       GoRoute(path: '/op/home', builder: (_, __) => const OperatorHomePage()),

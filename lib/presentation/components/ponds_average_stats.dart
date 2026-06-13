@@ -52,7 +52,6 @@ class _PondsAverageStatsState extends State<PondsAverageStats> {
         for (var reading in readings) {
           if (!groupedStats.containsKey(reading.sensorType)) {
             groupedStats[reading.sensorType] = [];
-            _units[reading.sensorType] = reading.unit;
           }
           groupedStats[reading.sensorType]!.add(reading.value);
         }
@@ -120,39 +119,90 @@ class _PondsAverageStatsState extends State<PondsAverageStats> {
             const Text('Promedio Global de Sensores', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: kTextPrimary)),
             const SizedBox(height: 16),
             Wrap(
-              spacing: 12,
-              runSpacing: 12,
+              spacing: 16,
+              runSpacing: 16,
               children: _averages.entries.map((e) {
                 final color = _getColorForType(e.key);
+                
+                // Definir un valor máximo aproximado para calcular el porcentaje
+                double maxVal = 100;
+                if (e.key.toUpperCase().contains('TEMP')) maxVal = 40; // Max 40 grados
+                if (e.key.toUpperCase().contains('PH')) maxVal = 14;   // Max 14 pH
+                if (e.key.toUpperCase().contains('OXY')) maxVal = 20;  // Max 20 mg/L
+                final percentage = (e.value / maxVal).clamp(0.0, 1.0);
+
                 return Container(
                   width: 140,
-                  padding: const EdgeInsets.all(12),
+                  height: 160,
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: color.withValues(alpha: 0.3)),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
+                    ],
+                    border: Border.all(color: kBorder),
                   ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(_getIconForType(e.key), color: color, size: 16),
-                          const SizedBox(width: 8),
-                          Expanded(
+                          const SizedBox(width: 6),
+                          Flexible(
                             child: Text(
                               e.key,
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: kTextSecondary),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${e.value.toStringAsFixed(1)} ${_units[e.key] ?? ""}',
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: kTextPrimary),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: 70,
+                        height: 70,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            CircularProgressIndicator(
+                              value: 1.0,
+                              strokeWidth: 8,
+                              valueColor: AlwaysStoppedAnimation(color.withValues(alpha: 0.1)),
+                            ),
+                            TweenAnimationBuilder<double>(
+                              tween: Tween<double>(begin: 0.0, end: percentage),
+                              duration: const Duration(milliseconds: 1500),
+                              curve: Curves.easeOutCubic,
+                              builder: (context, value, _) => CircularProgressIndicator(
+                                value: value,
+                                strokeWidth: 8,
+                                backgroundColor: Colors.transparent,
+                                valueColor: AlwaysStoppedAnimation(color),
+                                strokeCap: StrokeCap.round,
+                              ),
+                            ),
+                            Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    e.value.toStringAsFixed(1),
+                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: kTextPrimary),
+                                  ),
+                                  if (!e.key.toUpperCase().contains('PH'))
+                                    Text(
+                                      _units[e.key] ?? "",
+                                      style: const TextStyle(fontSize: 10, color: kTextSecondary, fontWeight: FontWeight.w600),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),

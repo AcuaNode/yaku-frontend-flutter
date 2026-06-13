@@ -32,5 +32,6 @@ class ApiEndpoints {
   static String equipmentById(int id) => '/v1/equipment/$id';
   static String equipmentLink(int equipmentId, int pondId) => '/v1/equipment/$equipmentId/link/$pondId';
   static String subscriptionByUser(int userId) => '/v1/subscriptions/$userId';
+  static String subscriptionCheckout(int userId) => '/v1/subscriptions/$userId/checkout';
   static String usersByFarm(int farmId) => '/v1/users?farmId=$farmId';
 }

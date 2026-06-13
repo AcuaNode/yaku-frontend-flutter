@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../config/theme.dart';
 import '../../../domain/pond.dart';
 import '../../../infrastructure/pond_service.dart';
+import '../../../domain/equipment.dart';
+import '../../../infrastructure/equipment_service.dart';
 import '../../widgets/dashboard_layout.dart';
 
 class PondDetailPage extends StatefulWidget {
@@ -15,6 +17,7 @@ class _PondDetailPageState extends State<PondDetailPage> {
   Pond? _pond;
   List<SensorReading> _telemetry = [];
   List<Map<String, dynamic>> _operators = [];
+  List<Equipment> _pondEquipment = [];
   bool _loading = true;
 
   @override
@@ -26,16 +29,18 @@ class _PondDetailPageState extends State<PondDetailPage> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
+      final pondRes = await getPond(widget.pondId);
       final results = await Future.wait([
-        getPond(widget.pondId),
         getTelemetryStatus(widget.pondId),
         getOperators(),
+        getEquipment(farmId: pondRes.farmId),
       ]);
       if (mounted) {
         setState(() {
-          _pond = results[0] as Pond;
-          _telemetry = results[1] as List<SensorReading>;
-          _operators = results[2] as List<Map<String, dynamic>>;
+          _pond = pondRes;
+          _telemetry = results[0] as List<SensorReading>;
+          _operators = results[1] as List<Map<String, dynamic>>;
+          _pondEquipment = (results[2] as List<Equipment>).where((e) => e.pondId == widget.pondId).toList();
           _loading = false;
         });
       }
@@ -161,6 +166,8 @@ class _PondDetailPageState extends State<PondDetailPage> {
                         onAssign: _showAssignDialog,
                         onDeassign: _deassign,
                       ),
+                      const SizedBox(height: 24),
+                      _EquipmentSection(equipmentList: _pondEquipment),
                     ],
                   ),
                 ),
@@ -276,6 +283,51 @@ class _OperatorSection extends StatelessWidget {
               Text(op['email']?.toString() ?? '', style: const TextStyle(fontSize: 12, color: kTextSecondary)),
             ]),
           ]),
+      ]),
+    );
+  }
+}
+
+class _EquipmentSection extends StatelessWidget {
+  final List<Equipment> equipmentList;
+  const _EquipmentSection({required this.equipmentList});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: kSurface, borderRadius: BorderRadius.circular(12), border: Border.all(color: kBorder)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('Equipos Asignados', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: kNavy)),
+        const SizedBox(height: 12),
+        if (equipmentList.isEmpty)
+          const Text('No hay equipos asignados a este estanque.', style: TextStyle(fontSize: 13, color: kTextSecondary))
+        else
+          Column(
+            children: equipmentList.map((eq) {
+              final isLast = eq == equipmentList.last;
+              return Column(
+                children: [
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(color: eq.isSensor ? kPrimary.withValues(alpha: 0.1) : const Color(0xFF7C3AED).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                      child: Icon(eq.isSensor ? Icons.sensors : Icons.settings_remote, color: eq.isSensor ? kPrimary : const Color(0xFF7C3AED), size: 20),
+                    ),
+                    title: Text(eq.name, style: const TextStyle(fontWeight: FontWeight.w600, color: kTextPrimary)),
+                    subtitle: Text('${eq.type} · ${eq.physicalCode}', style: const TextStyle(fontSize: 12, color: kTextSecondary)),
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(color: kSuccess.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+                      child: Text(eq.status, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: kSuccess)),
+                    ),
+                  ),
+                  if (!isLast) const Divider(height: 1),
+                ],
+              );
+            }).toList(),
+          ),
       ]),
     );
   }

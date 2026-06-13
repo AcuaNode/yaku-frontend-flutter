@@ -29,6 +29,7 @@ const _navItems = [
   _NavItem('Estanques', Icons.water_outlined, '/estanques'),
   _NavItem('Equipos', Icons.devices_outlined, '/equipos'),
   _NavItem('Operadores', Icons.people_outlined, '/operadores'),
+  _NavItem('Suscripciones', Icons.workspace_premium_outlined, '/suscripciones'),
   _NavItem('Notificaciones', Icons.notifications_outlined, '/notificaciones'),
   _NavItem('Configuración', Icons.settings_outlined, '/configuracion'),
 ];
@@ -99,7 +100,11 @@ class _DesktopLayout extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: child,
+            child: Column(
+              children: [
+                Expanded(child: child),
+              ],
+            ),
           ),
         ],
       ),
