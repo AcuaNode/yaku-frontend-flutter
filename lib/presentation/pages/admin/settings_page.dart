@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../config/theme.dart';
-import '../../domain/user.dart';
-import '../../infrastructure/auth_provider.dart';
-import '../../infrastructure/auth_service.dart';
-import '../../infrastructure/http_client.dart';
-import '../../config/api_config.dart';
-import '../widgets/dashboard_layout.dart';
+import '../../../config/theme.dart';
+import '../../../domain/user.dart';
+import '../../../infrastructure/auth_provider.dart';
+import '../../../infrastructure/auth_service.dart';
+import '../../../infrastructure/http_client.dart';
+import '../../../config/api_config.dart';
+import '../../widgets/dashboard_layout.dart';
 import 'package:go_router/go_router.dart';
 
 class SettingsPage extends StatefulWidget {

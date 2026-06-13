@@ -1,101 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import '../../config/theme.dart';
-import '../../domain/notification.dart';
-import '../../domain/pond.dart';
-import '../../infrastructure/auth_provider.dart';
-import '../../infrastructure/farm_service.dart';
-import '../../infrastructure/notification_service.dart';
-import '../../infrastructure/pond_service.dart';
-import '../widgets/dashboard_layout.dart';
+import '../../../config/theme.dart';
+import '../../../domain/notification.dart';
+import '../../../domain/pond.dart';
 
-class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
-  @override
-  State<DashboardPage> createState() => _DashboardPageState();
-}
-
-class _DashboardPageState extends State<DashboardPage> {
-  List<Pond> _ponds = [];
-  List<AppNotification> _notifications = [];
-  bool _loading = true;
-  bool _showCreateFarm = false;
-  final _farmNameCtrl = TextEditingController();
-  final _farmAddressCtrl = TextEditingController();
-  bool _creatingFarm = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    final auth = context.read<AuthProvider>();
-    final userId = auth.user?.id ?? 0;
-    try {
-      final farm = await getUserFarm(userId);
-      if (farm == null) {
-        setState(() { _showCreateFarm = true; _loading = false; });
-        return;
-      }
-      final results = await Future.wait([getPondsByFarm(farm.id), getNotifications(userId)]);
-      setState(() {
-        _ponds = results[0] as List<Pond>;
-        _notifications = results[1] as List<AppNotification>;
-        _loading = false;
-      });
-    } catch (_) {
-      setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _createFarm() async {
-    if (_farmNameCtrl.text.trim().isEmpty) return;
-    setState(() => _creatingFarm = true);
-    try {
-      await createFarm(name: _farmNameCtrl.text.trim(), address: _farmAddressCtrl.text.trim());
-      setState(() { _showCreateFarm = false; _creatingFarm = false; });
-      _load();
-    } catch (_) { setState(() => _creatingFarm = false); }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final user = context.watch<AuthProvider>().user;
-    return DashboardLayout(
-      currentRoute: '/dashboard',
-      child: Stack(children: [
-        _loading
-            ? const Center(child: CircularProgressIndicator(color: kPrimary))
-            : RefreshIndicator(
-                onRefresh: _load,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(24),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('Bienvenido, ${user?.firstName ?? ""}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: kTextPrimary)),
-                    const SizedBox(height: 4),
-                    const Text('Resumen de tu sistema acuícola', style: TextStyle(color: kTextSecondary, fontSize: 14)),
-                    const SizedBox(height: 24),
-                    _StatsGrid(activePonds: _ponds.where((p) => p.status == 'ACTIVE').length, totalPonds: _ponds.length, unreadAlerts: _notifications.length),
-                    const SizedBox(height: 24),
-                    _RecentAlerts(notifications: _notifications.take(5).toList()),
-                    const SizedBox(height: 24),
-                    _PondsPreview(ponds: _ponds),
-                  ]),
-                ),
-              ),
-        if (_showCreateFarm) _CreateFarmModal(nameCtrl: _farmNameCtrl, addressCtrl: _farmAddressCtrl, loading: _creatingFarm, onConfirm: _createFarm),
-      ]),
-    );
-  }
-}
-
-class _StatsGrid extends StatelessWidget {
+class StatsGrid extends StatelessWidget {
   final int activePonds, totalPonds, unreadAlerts;
-  const _StatsGrid({required this.activePonds, required this.totalPonds, required this.unreadAlerts});
+  const StatsGrid({super.key, required this.activePonds, required this.totalPonds, required this.unreadAlerts});
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.of(context).size.width > 600;
@@ -133,9 +44,9 @@ class _StatCard extends StatelessWidget {
   );
 }
 
-class _RecentAlerts extends StatelessWidget {
+class RecentAlerts extends StatelessWidget {
   final List<AppNotification> notifications;
-  const _RecentAlerts({required this.notifications});
+  const RecentAlerts({super.key, required this.notifications});
   @override
   Widget build(BuildContext context) => Card(
     child: Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -161,9 +72,9 @@ class _RecentAlerts extends StatelessWidget {
   );
 }
 
-class _PondsPreview extends StatelessWidget {
+class PondsPreview extends StatelessWidget {
   final List<Pond> ponds;
-  const _PondsPreview({required this.ponds});
+  const PondsPreview({super.key, required this.ponds});
   @override
   Widget build(BuildContext context) => Card(
     child: Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -200,11 +111,11 @@ class _PondsPreview extends StatelessWidget {
   );
 }
 
-class _CreateFarmModal extends StatelessWidget {
+class CreateFarmModal extends StatelessWidget {
   final TextEditingController nameCtrl, addressCtrl;
   final bool loading;
   final VoidCallback onConfirm;
-  const _CreateFarmModal({required this.nameCtrl, required this.addressCtrl, required this.loading, required this.onConfirm});
+  const CreateFarmModal({super.key, required this.nameCtrl, required this.addressCtrl, required this.loading, required this.onConfirm});
   @override
   Widget build(BuildContext context) => Container(
     color: Colors.black54,

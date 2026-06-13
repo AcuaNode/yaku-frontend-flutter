@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../config/theme.dart';
-import '../../infrastructure/auth_provider.dart';
+import '../../../config/theme.dart';
+import '../../../infrastructure/auth_provider.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -19,7 +20,15 @@ class _RegisterPageState extends State<RegisterPage> {
   final _passwordCtrl = TextEditingController();
   final _farmTokenCtrl = TextEditingController();
   bool _showPassword = false;
-  String _role = 'ADMIN';
+  late String _role;
+  late bool _isMobile;
+
+  @override
+  void initState() {
+    super.initState();
+    _isMobile = !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
+    _role = _isMobile ? 'OPERATOR' : 'ADMIN';
+  }
 
   @override
   void dispose() {
@@ -120,13 +129,26 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
                 const SizedBox(height: 14),
-                _Label('ROL'),
+                _Label('ROL ASIGNADO'),
                 const SizedBox(height: 8),
-                Row(children: [
-                  Expanded(child: _RoleButton(label: 'Administrador', value: 'ADMIN', selected: _role == 'ADMIN', onTap: () => setState(() { _role = 'ADMIN'; _farmTokenCtrl.clear(); }))),
-                  const SizedBox(width: 10),
-                  Expanded(child: _RoleButton(label: 'Operador', value: 'OPERATOR', selected: _role == 'OPERATOR', onTap: () => setState(() => _role = 'OPERATOR'))),
-                ]),
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0F9FF),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: kPrimary.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(_isMobile ? Icons.engineering_outlined : Icons.admin_panel_settings_outlined, color: kPrimary),
+                      const SizedBox(width: 10),
+                      Text(
+                        _role == 'OPERATOR' ? 'Operador (App Móvil)' : 'Administrador (Web/PC)',
+                        style: const TextStyle(color: kPrimaryDark, fontWeight: FontWeight.w600, fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
                 if (_role == 'OPERATOR') ...[
                   const SizedBox(height: 14),
                   _Label('TOKEN DE GRANJA'),

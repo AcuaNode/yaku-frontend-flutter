@@ -99,12 +99,7 @@ class _DesktopLayout extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Column(
-              children: [
-                _TopBar(currentRoute: currentRoute),
-                Expanded(child: child),
-              ],
-            ),
+            child: child,
           ),
         ],
       ),
@@ -142,48 +137,7 @@ class _SidebarItem extends StatelessWidget {
   }
 }
 
-class _TopBar extends StatelessWidget {
-  final String currentRoute;
-  const _TopBar({required this.currentRoute});
 
-  String get _title {
-    if (currentRoute.startsWith('/dashboard')) return 'Dashboard';
-    if (currentRoute.startsWith('/estanques')) return 'Estanques';
-    if (currentRoute.startsWith('/equipos')) return 'Equipos';
-    if (currentRoute.startsWith('/operadores')) return 'Operadores';
-    if (currentRoute.startsWith('/notificaciones')) return 'Notificaciones';
-    if (currentRoute.startsWith('/configuracion')) return 'Configuración';
-    return '';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 60,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: const BoxDecoration(
-        color: kSurface,
-        border: Border(bottom: BorderSide(color: kBorder)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Buscar estanque o alerta...',
-                prefixIcon: const Icon(Icons.search, size: 18, color: Color(0xFF94A3B8)),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kBorder)),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kBorder)),
-                contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                isDense: true,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _MobileLayout extends StatelessWidget {
   final Widget child;

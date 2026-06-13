@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../config/theme.dart';
-import '../../infrastructure/auth_provider.dart';
+import '../../../config/theme.dart';
+import '../../../infrastructure/auth_provider.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -15,6 +16,13 @@ class _LoginPageState extends State<LoginPage> {
   final _usernameCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _showPassword = false;
+  late bool _isMobile;
+
+  @override
+  void initState() {
+    super.initState();
+    _isMobile = !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
+  }
 
   @override
   void dispose() {
@@ -28,6 +36,21 @@ class _LoginPageState extends State<LoginPage> {
     final ok = await auth.login(_usernameCtrl.text.trim(), _passwordCtrl.text);
     if (ok && mounted) {
       final role = context.read<AuthProvider>().user?.role;
+      
+      if (_isMobile && role != 'OPERATOR') {
+        await auth.logout();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Acceso denegado: Solo Operadores permitidos en la app.')));
+        }
+        return;
+      } else if (!_isMobile && role != 'ADMIN') {
+        await auth.logout();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Acceso denegado: Solo Administradores permitidos en este entorno.')));
+        }
+        return;
+      }
+      
       context.go(role == 'OPERATOR' ? '/op/home' : '/dashboard');
     }
   }
@@ -53,6 +76,27 @@ class _LoginPageState extends State<LoginPage> {
               children: [
                 Center(child: Image.asset('assets/images/yaku-logo.png', height: 120)),
                 const SizedBox(height: 24),
+                _Label('INICIANDO SESIÓN COMO'),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0F9FF),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: kPrimary.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(_isMobile ? Icons.engineering_outlined : Icons.admin_panel_settings_outlined, color: kPrimary),
+                      const SizedBox(width: 10),
+                      Text(
+                        _isMobile ? 'Operador (App Móvil)' : 'Administrador (Web/PC)',
+                        style: const TextStyle(color: kPrimaryDark, fontWeight: FontWeight.w600, fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
                 _Label('USERNAME'),
                 const SizedBox(height: 6),
                 TextField(

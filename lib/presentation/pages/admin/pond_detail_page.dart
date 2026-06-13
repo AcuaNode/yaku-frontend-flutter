@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../config/theme.dart';
-import '../../domain/pond.dart';
-import '../../infrastructure/pond_service.dart';
-import '../widgets/dashboard_layout.dart';
+import '../../../config/theme.dart';
+import '../../../domain/pond.dart';
+import '../../../infrastructure/pond_service.dart';
+import '../../widgets/dashboard_layout.dart';
 
 class PondDetailPage extends StatefulWidget {
   final int pondId;

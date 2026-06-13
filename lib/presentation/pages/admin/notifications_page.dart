@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../config/theme.dart';
-import '../../domain/notification.dart';
-import '../../infrastructure/auth_provider.dart';
-import '../../infrastructure/notification_service.dart';
-import '../widgets/dashboard_layout.dart';
+import '../../../config/theme.dart';
+import '../../../domain/notification.dart';
+import '../../../infrastructure/auth_provider.dart';
+import '../../../infrastructure/notification_service.dart';
+import '../../widgets/dashboard_layout.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});

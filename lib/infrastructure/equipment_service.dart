@@ -17,6 +17,7 @@ Future<void> deleteEquipment(int id) async {
   await httpClient.delete(ApiEndpoints.equipmentById(id));
 }
 
-Future<void> linkEquipment(int equipmentId, int pondId) async {
-  await httpClient.post(ApiEndpoints.equipmentLink(equipmentId, pondId));
+Future<Equipment> linkEquipment(int equipmentId, int pondId) async {
+  final res = await httpClient.post(ApiEndpoints.equipmentLink(equipmentId, pondId));
+  return Equipment.fromJson(res.data as Map<String, dynamic>);
 }
