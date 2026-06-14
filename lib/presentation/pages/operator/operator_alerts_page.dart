@@ -284,7 +284,7 @@ class _AlertCard extends StatelessWidget {
                           color: kNavy,
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: Text('POND-${notif.id % 20 + 1}',
+                        child: Text(notif.pondName ?? (notif.pondId != null ? 'Estanque #${notif.pondId}' : 'Estanque'),
                             style: const TextStyle(fontSize: 11, color: Colors.white,
                                 fontWeight: FontWeight.w600)),
                       ),

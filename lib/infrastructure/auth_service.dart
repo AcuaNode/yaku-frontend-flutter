@@ -90,6 +90,13 @@ Future<User> register({
   return login(username, password);
 }
 
+Future<void> changePassword({required int userId, required String currentPassword, required String newPassword}) async {
+  await httpClient.patch(ApiEndpoints.changePassword(userId), data: {
+    'currentPassword': currentPassword,
+    'newPassword': newPassword,
+  });
+}
+
 Future<User> getUserById(int id) async {
   final res = await httpClient.get(ApiEndpoints.userById(id));
   final data = res.data as Map<String, dynamic>;

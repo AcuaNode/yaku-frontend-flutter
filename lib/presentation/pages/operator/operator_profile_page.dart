@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../../config/theme.dart';
 import '../../../infrastructure/auth_provider.dart';
+import '../../../infrastructure/auth_service.dart' as svc;
 import '../../../infrastructure/farm_service.dart';
 import '../../../infrastructure/notification_service.dart';
 import '../../widgets/operator_layout.dart';
@@ -45,15 +46,137 @@ class _State extends State<OperatorProfilePage> {
     }
   }
 
+  void _openChangePassword() {
+    final userId = context.read<AuthProvider>().user?.id ?? 0;
+    final currentCtrl = TextEditingController();
+    final newCtrl = TextEditingController();
+    final confirmCtrl = TextEditingController();
+    String? error;
+    bool saving = false;
+    bool success = false;
+    bool showCurrent = false;
+    bool showNew = false;
+    bool showConfirm = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(builder: (ctx, setModal) {
+          Future<void> submit() async {
+            final current = currentCtrl.text.trim();
+            final nw = newCtrl.text.trim();
+            final confirm = confirmCtrl.text.trim();
+            if (current.isEmpty || nw.isEmpty || confirm.isEmpty) {
+              setModal(() => error = 'Completa todos los campos');
+              return;
+            }
+            if (nw.length < 6) {
+              setModal(() => error = 'La contraseña debe tener al menos 6 caracteres');
+              return;
+            }
+            if (nw != confirm) {
+              setModal(() => error = 'Las contraseñas nuevas no coinciden');
+              return;
+            }
+            setModal(() { saving = true; error = null; });
+            try {
+              await svc.changePassword(
+                userId: userId,
+                currentPassword: current,
+                newPassword: nw,
+              );
+              setModal(() { saving = false; success = true; });
+              await Future.delayed(const Duration(seconds: 1));
+              if (ctx.mounted) Navigator.pop(ctx);
+            } catch (_) {
+              setModal(() {
+                saving = false;
+                error = 'Contraseña actual incorrecta o error en el servidor';
+              });
+            }
+          }
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  const Text('Cambiar Contraseña',
+                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: kNavy)),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: kTextSecondary),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ]),
+                const SizedBox(height: 16),
+                _PwField(
+                  label: 'Contraseña actual',
+                  controller: currentCtrl,
+                  obscure: !showCurrent,
+                  onToggle: () => setModal(() => showCurrent = !showCurrent),
+                ),
+                const SizedBox(height: 12),
+                _PwField(
+                  label: 'Nueva contraseña',
+                  controller: newCtrl,
+                  obscure: !showNew,
+                  onToggle: () => setModal(() => showNew = !showNew),
+                ),
+                const SizedBox(height: 12),
+                _PwField(
+                  label: 'Confirmar nueva contraseña',
+                  controller: confirmCtrl,
+                  obscure: !showConfirm,
+                  onToggle: () => setModal(() => showConfirm = !showConfirm),
+                ),
+                if (error != null) ...[
+                  const SizedBox(height: 10),
+                  Text(error!, style: const TextStyle(color: kError, fontSize: 13)),
+                ],
+                if (success) ...[
+                  const SizedBox(height: 10),
+                  const Text('Contraseña actualizada exitosamente',
+                      style: TextStyle(color: kSuccess, fontSize: 13, fontWeight: FontWeight.w600)),
+                ],
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: saving ? null : submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: kPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: saving
+                        ? const SizedBox(width: 20, height: 20,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Text('Actualizar contraseña',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+                  ),
+                ),
+              ]),
+            ),
+          );
+        });
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
     final initials = user != null && user.firstName.isNotEmpty
         ? '${user.firstName[0]}${user.lastName.isNotEmpty ? user.lastName[0] : ''}'.toUpperCase()
         : '?';
-    final farmName = _farm?.name ?? 'Sin finca';
-    final farmCode = _farm != null ? 'SAN-JOSE-0${_farm!.id}' : '--';
-
     return OperatorLayout(
       currentRoute: '/op/profile',
       child: SafeArea(
@@ -69,22 +192,20 @@ class _State extends State<OperatorProfilePage> {
                       children: [
                         const Text('Mi Perfil',
                             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: kNavy)),
-                        Row(children: [
-                          Text(farmName,
-                              style: const TextStyle(fontSize: 13, color: kTextSecondary)),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.location_on_outlined, size: 16, color: kTextSecondary),
-                        ]),
+                        if (_farm != null)
+                          Row(children: [
+                            Text(_farm!.name,
+                                style: const TextStyle(fontSize: 13, color: kTextSecondary)),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.location_on_outlined, size: 16, color: kTextSecondary),
+                          ]),
                       ],
                     ),
                   ),
                   Container(
                     color: kSurface,
                     child: Column(children: [
-                      Container(
-                        height: 100,
-                        color: kNavy,
-                      ),
+                      Container(height: 100, color: kNavy),
                       Transform.translate(
                         offset: const Offset(0, -40),
                         child: Column(children: [
@@ -148,90 +269,46 @@ class _State extends State<OperatorProfilePage> {
                               label: 'CORREO ELECTRÓNICO',
                               value: user?.email ?? '--',
                             ),
-                            const SizedBox(height: 10),
-                            _InfoRow(
-                              icon: Icons.grid_view_outlined,
-                              label: 'ID DE FINCA ASIGNADA',
-                              value: farmCode,
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: kBackground,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(children: [
+                                Container(
+                                  width: 40, height: 40,
+                                  decoration: BoxDecoration(
+                                    color: kPrimary.withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(Icons.notifications_outlined, size: 20, color: kPrimary),
+                                ),
+                                const SizedBox(width: 12),
+                                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                  const Text('ALERTAS RECIBIDAS',
+                                      style: TextStyle(fontSize: 10, color: kTextSecondary,
+                                          letterSpacing: 0.8, fontWeight: FontWeight.w600)),
+                                  Text(_alertCount.toString().padLeft(2, '0'),
+                                      style: const TextStyle(fontSize: 20,
+                                          fontWeight: FontWeight.bold, color: kNavy)),
+                                ]),
+                              ]),
                             ),
-                            const SizedBox(height: 16),
-                            Row(children: [
-                              Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: kNavy,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                    const Text('TURNOS',
-                                        style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8),
-                                            letterSpacing: 0.8, fontWeight: FontWeight.w600)),
-                                    const SizedBox(height: 6),
-                                    const Text('24/30',
-                                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold,
-                                            color: Colors.white)),
-                                    const SizedBox(height: 8),
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(4),
-                                      child: LinearProgressIndicator(
-                                        value: 24 / 30,
-                                        minHeight: 6,
-                                        backgroundColor: const Color(0xFF1E3A5F),
-                                        valueColor: const AlwaysStoppedAnimation<Color>(kPrimary),
-                                      ),
-                                    ),
-                                  ]),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: kSurface,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: kBorder),
-                                  ),
-                                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                    const Text('ALERTAS',
-                                        style: TextStyle(fontSize: 11, color: kTextSecondary,
-                                            letterSpacing: 0.8, fontWeight: FontWeight.w600)),
-                                    const SizedBox(height: 6),
-                                    Text(_alertCount.toString().padLeft(2, '0'),
-                                        style: const TextStyle(fontSize: 22,
-                                            fontWeight: FontWeight.bold, color: kNavy)),
-                                    const SizedBox(height: 4),
-                                    const Text('Resueltas',
-                                        style: TextStyle(fontSize: 13, color: kSuccess,
-                                            fontWeight: FontWeight.w600)),
-                                  ]),
-                                ),
-                              ),
-                            ]),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 20),
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton.icon(
-                                icon: const Icon(Icons.edit_outlined, size: 16),
-                                label: const Text('Editar perfil'),
-                                onPressed: () {},
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton.icon(
-                                icon: const Icon(Icons.shield_outlined, size: 16, color: kNavy),
-                                label: const Text('Seguridad y Acceso',
-                                    style: TextStyle(color: kNavy)),
-                                style: OutlinedButton.styleFrom(
-                                  side: const BorderSide(color: kBorder),
+                                icon: const Icon(Icons.lock_outline, size: 18, color: Colors.white),
+                                label: const Text('Cambiar Contraseña',
+                                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: kPrimary,
                                   padding: const EdgeInsets.symmetric(vertical: 14),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8)),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 ),
-                                onPressed: () {},
+                                onPressed: _openChangePassword,
                               ),
                             ),
                             const SizedBox(height: 10),
@@ -263,6 +340,39 @@ class _State extends State<OperatorProfilePage> {
               ),
       ),
     );
+  }
+}
+
+class _PwField extends StatelessWidget {
+  final String label;
+  final TextEditingController controller;
+  final bool obscure;
+  final VoidCallback onToggle;
+  const _PwField({required this.label, required this.controller, required this.obscure, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: const TextStyle(fontSize: 12, color: kTextSecondary, fontWeight: FontWeight.w600)),
+      const SizedBox(height: 6),
+      TextField(
+        controller: controller,
+        obscureText: obscure,
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: kBackground,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kBorder)),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kBorder)),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: kPrimary)),
+          suffixIcon: IconButton(
+            icon: Icon(obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                size: 18, color: kTextSecondary),
+            onPressed: onToggle,
+          ),
+        ),
+      ),
+    ]);
   }
 }
 

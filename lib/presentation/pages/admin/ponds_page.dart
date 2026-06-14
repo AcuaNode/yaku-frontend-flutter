@@ -130,11 +130,25 @@ class _PondCard extends StatelessWidget {
   }
 }
 
-class _CreatePondModal extends StatelessWidget {
+class _CreatePondModal extends StatefulWidget {
   final TextEditingController nameCtrl, speciesCtrl, volumeCtrl;
   final bool loading;
   final VoidCallback onConfirm, onCancel;
   const _CreatePondModal({required this.nameCtrl, required this.speciesCtrl, required this.volumeCtrl, required this.loading, required this.onConfirm, required this.onCancel});
+  @override
+  State<_CreatePondModal> createState() => _CreatePondModalState();
+}
+
+class _CreatePondModalState extends State<_CreatePondModal> {
+  static const _species = ['TRUCHA', 'PAICHE', 'TILAPIA'];
+  String _selected = 'TRUCHA';
+
+  @override
+  void initState() {
+    super.initState();
+    widget.speciesCtrl.text = _selected;
+  }
+
   @override
   Widget build(BuildContext context) => Container(
     color: Colors.black54,
@@ -145,21 +159,30 @@ class _CreatePondModal extends StatelessWidget {
       child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           const Text('Nuevo Estanque', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: kTextPrimary)),
-          IconButton(onPressed: onCancel, icon: const Icon(Icons.close)),
+          IconButton(onPressed: widget.onCancel, icon: const Icon(Icons.close)),
         ]),
         const SizedBox(height: 16),
-        TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Nombre')),
+        TextField(controller: widget.nameCtrl, decoration: const InputDecoration(labelText: 'Nombre')),
         const SizedBox(height: 12),
-        TextField(controller: speciesCtrl, decoration: const InputDecoration(labelText: 'Especie')),
+        DropdownButtonFormField<String>(
+          value: _selected,
+          decoration: const InputDecoration(labelText: 'Especie'),
+          items: _species.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+          onChanged: (v) {
+            if (v == null) return;
+            setState(() => _selected = v);
+            widget.speciesCtrl.text = v;
+          },
+        ),
         const SizedBox(height: 12),
-        TextField(controller: volumeCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Volumen (m³)')),
+        TextField(controller: widget.volumeCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Volumen (m³)')),
         const SizedBox(height: 20),
         Row(children: [
-          Expanded(child: OutlinedButton(onPressed: onCancel, child: const Text('Cancelar'))),
+          Expanded(child: OutlinedButton(onPressed: widget.onCancel, child: const Text('Cancelar'))),
           const SizedBox(width: 12),
           Expanded(child: ElevatedButton(
-            onPressed: loading ? null : onConfirm,
-            child: loading ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('Crear'),
+            onPressed: widget.loading ? null : widget.onConfirm,
+            child: widget.loading ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('Crear'),
           )),
         ]),
       ]),

@@ -15,6 +15,7 @@ import '../presentation/pages/operator/operator_pond_detail_page.dart';
 import '../presentation/pages/operator/operator_history_page.dart';
 import '../presentation/pages/operator/operator_alerts_page.dart';
 import '../presentation/pages/operator/operator_profile_page.dart';
+import '../presentation/pages/operator/operator_equipment_page.dart';
 
 GoRouter buildRouter(AuthProvider auth) {
   return GoRouter(
@@ -64,6 +65,7 @@ GoRouter buildRouter(AuthProvider auth) {
             OperatorHistoryPage(pondId: int.parse(state.pathParameters['id']!)),
       ),
       GoRoute(path: '/op/alerts', builder: (_, __) => const OperatorAlertsPage()),
+      GoRoute(path: '/op/equipment', builder: (_, __) => const OperatorEquipmentPage()),
       GoRoute(path: '/op/profile', builder: (_, __) => const OperatorProfilePage()),
     ],
     initialLocation: '/login',

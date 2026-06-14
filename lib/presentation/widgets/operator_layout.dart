@@ -12,6 +12,7 @@ class OperatorLayout extends StatelessWidget {
     const tabs = [
       _Tab('Inicio', Icons.home_outlined, Icons.home, '/op/home'),
       _Tab('Alertas', Icons.notifications_outlined, Icons.notifications, '/op/alerts'),
+      _Tab('Equipos', Icons.build_outlined, Icons.build, '/op/equipment'),
       _Tab('Perfil', Icons.person_outline, Icons.person, '/op/profile'),
     ];
     final idx = tabs.indexWhere((t) => currentRoute.startsWith(t.route));

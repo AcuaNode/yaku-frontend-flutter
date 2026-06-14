@@ -12,20 +12,33 @@ class OperatorHistoryPage extends StatefulWidget {
   State<OperatorHistoryPage> createState() => _State();
 }
 
-class _State extends State<OperatorHistoryPage> {
-  List<SensorReading> _status = [];
-  List<HistoricalReading> _historical = [];
+class _State extends State<OperatorHistoryPage> with SingleTickerProviderStateMixin {
+  List<SensorReading> _allStatus = [];
+  List<HistoricalReading> _allHistorical = [];
   bool _loading = true;
   int _filterIndex = 0;
   int _page = 1;
   static const _pageSize = 5;
+  DateTime? _customStart;
+  DateTime? _customEnd;
+
+  late final AnimationController _animController;
+  late Animation<double> _fadeAnim;
 
   final _filters = ['Hoy', '7 Días', '15 Días', 'Personalizado'];
 
   @override
   void initState() {
     super.initState();
+    _animController = AnimationController(vsync: this, duration: const Duration(milliseconds: 250));
+    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeIn);
     _load();
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -37,22 +50,81 @@ class _State extends State<OperatorHistoryPage> {
       ]);
       if (mounted) {
         setState(() {
-          _status = results[0] as List<SensorReading>;
-          _historical = results[1] as List<HistoricalReading>;
+          _allStatus = results[0] as List<SensorReading>;
+          _allHistorical = results[1] as List<HistoricalReading>;
           _loading = false;
         });
+        _animController.forward(from: 0);
       }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  List<HistoricalReading> get _o2Bars {
-    return _historical.where((h) => h.sensorType.toUpperCase().contains('OX')).toList();
+  DateTime get _cutoff {
+    final now = DateTime.now();
+    if (_filterIndex == 0) return DateTime(now.year, now.month, now.day);
+    if (_filterIndex == 1) return now.subtract(const Duration(days: 7));
+    if (_filterIndex == 2) return now.subtract(const Duration(days: 15));
+    return _customStart ?? DateTime(2000);
   }
 
-  List<SensorReading> get _pagedReadings {
-    return _status.take(_page * _pageSize).toList();
+  List<SensorReading> get _filteredStatus {
+    if (_filterIndex == 3 && (_customStart == null || _customEnd == null)) return _allStatus;
+    return _allStatus.where((r) {
+      final dt = DateTime.tryParse(r.timestamp);
+      if (dt == null) return false;
+      if (_filterIndex == 3) {
+        final end = _customEnd!.add(const Duration(days: 1));
+        return dt.isAfter(_customStart!) && dt.isBefore(end);
+      }
+      return dt.isAfter(_cutoff);
+    }).toList();
+  }
+
+  List<HistoricalReading> get _filteredHistorical {
+    final ox = _allHistorical.where((h) => h.sensorType.toUpperCase().contains('OX')).toList();
+    if (_filterIndex == 3 && (_customStart == null || _customEnd == null)) return ox;
+    return ox.where((h) {
+      final dt = DateTime.tryParse(h.periodStart);
+      if (dt == null) return false;
+      if (_filterIndex == 3) {
+        final end = _customEnd!.add(const Duration(days: 1));
+        return dt.isAfter(_customStart!) && dt.isBefore(end);
+      }
+      return dt.isAfter(_cutoff);
+    }).toList();
+  }
+
+  Future<void> _onFilterTap(int i) async {
+    if (i == 3) {
+      final range = await showDateRangePicker(
+        context: context,
+        firstDate: DateTime(2024),
+        lastDate: DateTime.now(),
+        initialDateRange: _customStart != null && _customEnd != null
+            ? DateTimeRange(start: _customStart!, end: _customEnd!)
+            : null,
+        builder: (ctx, child) => Theme(
+          data: Theme.of(ctx).copyWith(
+            colorScheme: const ColorScheme.light(primary: kPrimary, onPrimary: Colors.white),
+          ),
+          child: child!,
+        ),
+      );
+      if (range != null && mounted) {
+        setState(() {
+          _filterIndex = 3;
+          _customStart = range.start;
+          _customEnd = range.end;
+          _page = 1;
+        });
+        _animController.forward(from: 0);
+      }
+      return;
+    }
+    setState(() { _filterIndex = i; _page = 1; });
+    _animController.forward(from: 0);
   }
 
   bool _isAlert(SensorReading r) {
@@ -90,17 +162,26 @@ class _State extends State<OperatorHistoryPage> {
                       _FilterTabs(
                         filters: _filters,
                         selected: _filterIndex,
-                        onSelect: (i) => setState(() => _filterIndex = i),
+                        onSelect: _onFilterTap,
                       ),
-                      const SizedBox(height: 16),
-                      _BarChartCard(readings: _o2Bars),
-                      const SizedBox(height: 20),
-                      ..._buildReadingGroups(),
-                      if (_page * _pageSize < _status.length)
+                      if (_filterIndex == 3 && _customStart != null && _customEnd != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
-                          child: _LoadMoreButton(onTap: () => setState(() => _page++)),
+                          child: Text(
+                            '${_fmt(_customStart!)} — ${_fmt(_customEnd!)}',
+                            style: const TextStyle(fontSize: 12, color: kPrimary, fontWeight: FontWeight.w600),
+                          ),
                         ),
+                      const SizedBox(height: 16),
+                      FadeTransition(
+                        opacity: _fadeAnim,
+                        child: _BarChartCard(readings: _filteredHistorical),
+                      ),
+                      const SizedBox(height: 20),
+                      FadeTransition(
+                        opacity: _fadeAnim,
+                        child: Column(children: _buildReadingGroups()),
+                      ),
                       const SizedBox(height: 16),
                     ],
                   ),
@@ -110,27 +191,37 @@ class _State extends State<OperatorHistoryPage> {
     );
   }
 
+  String _fmt(DateTime d) => '${d.day}/${d.month}/${d.year}';
+
   List<Widget> _buildReadingGroups() {
-    if (_status.isEmpty) {
+    final readings = _filteredStatus;
+    if (readings.isEmpty) {
       return [
         const Center(
           child: Padding(
             padding: EdgeInsets.all(24),
-            child: Text('Sin lecturas disponibles', style: TextStyle(color: kTextSecondary)),
+            child: Text('Sin lecturas para el período seleccionado',
+                style: TextStyle(color: kTextSecondary)),
           ),
         ),
       ];
     }
-
-    final readings = _pagedReadings;
-    return readings.map((r) => _ReadingCard(reading: r, isAlert: _isAlert(r))).toList();
+    final paged = readings.take(_page * _pageSize).toList();
+    return [
+      ...paged.map((r) => _ReadingCard(reading: r, isAlert: _isAlert(r))),
+      if (_page * _pageSize < readings.length)
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: _LoadMoreButton(onTap: () => setState(() => _page++)),
+        ),
+    ];
   }
 }
 
 class _FilterTabs extends StatelessWidget {
   final List<String> filters;
   final int selected;
-  final ValueChanged<int> onSelect;
+  final Future<void> Function(int) onSelect;
   const _FilterTabs({required this.filters, required this.selected, required this.onSelect});
 
   @override
@@ -141,7 +232,8 @@ class _FilterTabs extends StatelessWidget {
         return Expanded(
           child: GestureDetector(
             onTap: () => onSelect(e.key),
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
               margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
@@ -173,28 +265,40 @@ class _BarChartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vals = readings.map((r) => r.avgValue).toList();
-    final displayVals = vals.isEmpty
-        ? [3.5, 4.2, 3.8, 5.0, 4.8, 6.8, 5.9, 6.2]
-        : (vals.length > 8 ? vals.sublist(vals.length - 8) : vals);
+
+    if (vals.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: kNavy, borderRadius: BorderRadius.circular(12)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('TENDENCIA DE OXÍGENO (O2)',
+              style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8),
+                  fontWeight: FontWeight.w600, letterSpacing: 0.8)),
+          const SizedBox(height: 24),
+          const Center(
+            child: Text('Sin datos para el período',
+                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13)),
+          ),
+          const SizedBox(height: 24),
+        ]),
+      );
+    }
+
+    final displayVals = vals.length > 8 ? vals.sublist(vals.length - 8) : vals;
     final max = displayVals.reduce((a, b) => a > b ? a : b);
     final highlightIdx = displayVals.indexOf(max);
 
-    final timeLabels = ['08:00', '12:00', '16:00', '20:00'];
-
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: kNavy,
-        borderRadius: BorderRadius.circular(12),
-      ),
+      decoration: BoxDecoration(color: kNavy, borderRadius: BorderRadius.circular(12)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           const Text('TENDENCIA DE OXÍGENO (O2)',
               style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8),
                   fontWeight: FontWeight.w600, letterSpacing: 0.8)),
           const Spacer(),
-          const Text('+2.4% vs ayer',
-              style: TextStyle(fontSize: 11, color: kSuccess, fontWeight: FontWeight.w600)),
+          Text('${displayVals.length} lecturas',
+              style: const TextStyle(fontSize: 11, color: kSuccess, fontWeight: FontWeight.w600)),
         ]),
         const SizedBox(height: 16),
         SizedBox(
@@ -212,10 +316,7 @@ class _BarChartCard extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: kPrimary,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
+                        decoration: BoxDecoration(color: kPrimary, borderRadius: BorderRadius.circular(4)),
                         child: Text(e.value.toStringAsFixed(1),
                             style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w700)),
                       ),
@@ -232,12 +333,6 @@ class _BarChartCard extends StatelessWidget {
               );
             }).toList(),
           ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: timeLabels.map((t) => Text(t,
-              style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8)))).toList(),
         ),
       ]),
     );
@@ -295,8 +390,7 @@ class _ReadingCard extends StatelessWidget {
             ),
             child: Text(
               isAlert ? 'ALERTA' : 'ESTABLE',
-              style: TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.w700,
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
                   color: isAlert ? kError : kSuccess),
             ),
           ),
@@ -305,21 +399,24 @@ class _ReadingCard extends StatelessWidget {
         Row(children: [
           _ValueTile(
             icon: Icons.thermostat_outlined,
-            value: '${reading.sensorType.toUpperCase().contains('TEMP') ? reading.value.toStringAsFixed(1) : '--'}°C',
+            value: reading.sensorType.toUpperCase().contains('TEMP')
+                ? '${reading.value.toStringAsFixed(1)}°C' : '--',
             label: 'TEMP',
             alert: isAlert && reading.sensorType.toUpperCase().contains('TEMP'),
           ),
           const SizedBox(width: 8),
           _ValueTile(
             icon: Icons.water_drop_outlined,
-            value: '${reading.sensorType.toUpperCase().contains('PH') ? reading.value.toStringAsFixed(1) : '--'} pH',
+            value: reading.sensorType.toUpperCase().contains('PH')
+                ? '${reading.value.toStringAsFixed(1)} pH' : '--',
             label: 'PH',
             alert: isAlert && reading.sensorType.toUpperCase().contains('PH'),
           ),
           const SizedBox(width: 8),
           _ValueTile(
             icon: Icons.air,
-            value: '${reading.sensorType.toUpperCase().contains('OX') ? reading.value.toStringAsFixed(1) : '--'} mg/L',
+            value: reading.sensorType.toUpperCase().contains('OX')
+                ? '${reading.value.toStringAsFixed(1)} mg/L' : '--',
             label: 'O2',
             alert: isAlert && reading.sensorType.toUpperCase().contains('OX'),
           ),
@@ -352,8 +449,7 @@ class _ValueTile extends StatelessWidget {
               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
                   color: alert ? kError : kNavy),
               textAlign: TextAlign.center),
-          Text(label,
-              style: const TextStyle(fontSize: 10, color: kTextSecondary)),
+          Text(label, style: const TextStyle(fontSize: 10, color: kTextSecondary)),
         ]),
       ),
     );
@@ -374,7 +470,7 @@ class _LoadMoreButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: kSurface,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: kBorder, style: BorderStyle.solid, width: 1.5),
+          border: Border.all(color: kBorder, width: 1.5),
         ),
         child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           Icon(Icons.refresh, size: 16, color: kTextSecondary),

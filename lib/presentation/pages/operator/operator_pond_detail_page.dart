@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../../../config/theme.dart';
 import '../../../infrastructure/pond_service.dart';
 import '../../../infrastructure/equipment_service.dart';
@@ -240,32 +241,61 @@ class _MiniBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayValues = values.isEmpty
-        ? <double>[0.5, 0.6, 0.5, 0.7, 0.65, 0.8, 0.75, 0.9]
-        : values;
-    final max = displayValues.reduce((a, b) => a > b ? a : b);
-    final barColor = featured
-        ? const Color(0xFF0E7490)
-        : const Color(0xFFCBD5E1);
+    if (values.isEmpty) {
+      return const SizedBox(
+        height: 48,
+        child: Center(
+          child: Text('Sin datos históricos',
+              style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+        ),
+      );
+    }
+
+    final lineColor = featured ? const Color(0xFF22D3EE) : kPrimary;
+    final gradientTop = featured
+        ? const Color(0xFF22D3EE).withOpacity(0.4)
+        : kPrimary.withOpacity(0.3);
+    final gradientBottom = featured
+        ? const Color(0xFF22D3EE).withOpacity(0.0)
+        : kPrimary.withOpacity(0.0);
+
+    final spots = values.asMap().entries
+        .map((e) => FlSpot(e.key.toDouble(), e.value))
+        .toList();
+
+    final minY = values.reduce((a, b) => a < b ? a : b);
+    final maxY = values.reduce((a, b) => a > b ? a : b);
+    final padding = (maxY - minY) * 0.2;
 
     return SizedBox(
-      height: 36,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: displayValues.map((v) {
-          final ratio = max > 0 ? v / max : 0.5;
-          final h = (ratio * 34).clamp(4.0, 34.0);
-          return Expanded(
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              height: h,
-              decoration: BoxDecoration(
-                color: barColor,
-                borderRadius: BorderRadius.circular(3),
+      height: 52,
+      child: LineChart(
+        LineChartData(
+          gridData: const FlGridData(show: false),
+          titlesData: const FlTitlesData(show: false),
+          borderData: FlBorderData(show: false),
+          minY: minY - padding,
+          maxY: maxY + padding,
+          lineTouchData: const LineTouchData(enabled: false),
+          lineBarsData: [
+            LineChartBarData(
+              spots: spots,
+              isCurved: true,
+              curveSmoothness: 0.35,
+              color: lineColor,
+              barWidth: 2,
+              dotData: const FlDotData(show: false),
+              belowBarData: BarAreaData(
+                show: true,
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [gradientTop, gradientBottom],
+                ),
               ),
             ),
-          );
-        }).toList(),
+          ],
+        ),
       ),
     );
   }

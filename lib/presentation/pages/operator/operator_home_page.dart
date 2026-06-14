@@ -72,10 +72,11 @@ class _OperatorHomePageState extends State<OperatorHomePage> {
                         const Text('Mis Estanques',
                             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: kNavy)),
                         const SizedBox(height: 4),
-                        Text(
-                          _farm != null ? 'Estado actual de la Finca ${_farm!.name}' : 'Sin finca asignada',
-                          style: const TextStyle(fontSize: 14, color: kTextSecondary),
-                        ),
+                        if (_farm != null)
+                          Text(
+                            'Estado actual de la Finca ${_farm!.name}',
+                            style: const TextStyle(fontSize: 14, color: kTextSecondary),
+                          ),
                         const SizedBox(height: 16),
                         if (_ponds.isEmpty)
                           const Center(

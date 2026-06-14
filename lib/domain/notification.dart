@@ -5,8 +5,10 @@ class AppNotification {
   final String createdAt;
   final double? triggerTemperature;
   final double? triggerPh;
+  final int? pondId;
+  final String? pondName;
 
-  const AppNotification({required this.id, required this.type, required this.message, required this.createdAt, this.triggerTemperature, this.triggerPh});
+  const AppNotification({required this.id, required this.type, required this.message, required this.createdAt, this.triggerTemperature, this.triggerPh, this.pondId, this.pondName});
 
   factory AppNotification.fromJson(Map<String, dynamic> j) => AppNotification(
     id: j['id'] as int,
@@ -15,6 +17,8 @@ class AppNotification {
     createdAt: j['createdAt']?.toString() ?? '',
     triggerTemperature: (j['triggerTemperature'] as num?)?.toDouble(),
     triggerPh: (j['triggerPh'] as num?)?.toDouble(),
+    pondId: (j['pondId'] as num?)?.toInt(),
+    pondName: j['pondName']?.toString(),
   );
 
   String get relativeTime {
