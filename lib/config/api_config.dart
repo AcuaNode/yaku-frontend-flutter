@@ -34,4 +34,7 @@ class ApiEndpoints {
   static String subscriptionByUser(int userId) => '/v1/subscriptions/$userId';
   static String subscriptionCheckout(int userId) => '/v1/subscriptions/$userId/checkout';
   static String usersByFarm(int farmId) => '/v1/users?farmId=$farmId';
+
+  static const thresholdsBase = '/v1/telemetry/thresholds';
+  static String thresholdsBySpecies(String species) => '/v1/telemetry/thresholds/$species';
 }

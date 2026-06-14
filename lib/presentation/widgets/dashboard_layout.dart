@@ -31,6 +31,7 @@ const _navItems = [
   _NavItem('Operadores', Icons.people_outlined, '/operadores'),
   _NavItem('Suscripciones', Icons.workspace_premium_outlined, '/suscripciones'),
   _NavItem('Notificaciones', Icons.notifications_outlined, '/notificaciones'),
+  _NavItem('Parámetros', Icons.tune_outlined, '/parametros'),
   _NavItem('Configuración', Icons.settings_outlined, '/configuracion'),
 ];
 
