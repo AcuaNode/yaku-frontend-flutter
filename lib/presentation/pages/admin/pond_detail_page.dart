@@ -158,7 +158,7 @@ class _PondDetailPageState extends State<PondDetailPage> {
                         const SizedBox(width: 12),
                         Expanded(child: _TelemetryCard(label: 'PH DEL AGUA', reading: _reading('PH'), unit: '', min: 6.5, max: 8.5, okMin: 6.5, okMax: 8.5)),
                         const SizedBox(width: 12),
-                        Expanded(child: _TelemetryCard(label: 'OXÍGENO DISUELTO', reading: _reading('OXYGEN'), unit: 'mg/L', min: 5, max: 12, okMin: 5, okMax: 12)),
+                        Expanded(child: _TelemetryCard(label: 'TURBIDEZ', reading: _reading('TURBIDITY'), unit: 'NTU', min: 0, max: 10, okMin: 0, okMax: 5)),
                       ]),
                       const SizedBox(height: 24),
                       _OperatorSection(

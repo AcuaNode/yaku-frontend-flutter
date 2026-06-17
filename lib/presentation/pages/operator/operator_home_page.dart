@@ -5,7 +5,9 @@ import '../../../config/theme.dart';
 import '../../../infrastructure/auth_provider.dart';
 import '../../../infrastructure/farm_service.dart';
 import '../../../infrastructure/pond_service.dart';
+import '../../../infrastructure/threshold_service.dart';
 import '../../../domain/pond.dart';
+import '../../../domain/threshold.dart' as domain;
 import '../../widgets/operator_layout.dart';
 
 class OperatorHomePage extends StatefulWidget {
@@ -18,6 +20,7 @@ class _OperatorHomePageState extends State<OperatorHomePage> {
   Farm? _farm;
   List<Pond> _ponds = [];
   Map<int, List<SensorReading>> _telemetry = {};
+  Map<String, domain.Threshold?> _thresholds = {};
   bool _loading = true;
 
   @override
@@ -40,11 +43,17 @@ class _OperatorHomePageState extends State<OperatorHomePage> {
       await Future.wait(ponds.map((p) async {
         telem[p.id] = await getTelemetryStatus(p.id);
       }));
+      final species = ponds.map((p) => p.species).toSet();
+      final Map<String, domain.Threshold?> thresholds = {};
+      await Future.wait(species.map((s) async {
+        thresholds[s] = await getThresholds(s);
+      }));
       if (mounted) {
         setState(() {
           _farm = farm;
           _ponds = ponds;
           _telemetry = telem;
+          _thresholds = thresholds;
           _loading = false;
         });
       }
@@ -90,6 +99,7 @@ class _OperatorHomePageState extends State<OperatorHomePage> {
                           ..._ponds.map((p) => _PondCard(
                                 pond: p,
                                 readings: _telemetry[p.id] ?? [],
+                                threshold: _thresholds[p.species],
                                 onTap: () => context.go('/op/pond/${p.id}'),
                               )),
                       ],
@@ -141,8 +151,9 @@ class _OpHeader extends StatelessWidget {
 class _PondCard extends StatelessWidget {
   final Pond pond;
   final List<SensorReading> readings;
+  final domain.Threshold? threshold;
   final VoidCallback onTap;
-  const _PondCard({required this.pond, required this.readings, required this.onTap});
+  const _PondCard({required this.pond, required this.readings, required this.threshold, required this.onTap});
 
   SensorReading? _get(String type) {
     try {
@@ -152,15 +163,31 @@ class _PondCard extends StatelessWidget {
     }
   }
 
-  bool get _isAlert {
+  bool get _tempAlert {
     final t = _get('TEMP');
-    final p = _get('PH');
-    final o = _get('OX');
-    if (t != null && (t.value < 20 || t.value > 30)) return true;
-    if (p != null && (p.value < 6.5 || p.value > 8.5)) return true;
-    if (o != null && o.value < 5) return true;
-    return false;
+    if (t == null) return false;
+    final th = threshold;
+    if (th != null) return t.value < th.minTemperature || t.value > th.maxTemperature;
+    return t.value < 20 || t.value > 30;
   }
+
+  bool get _phAlert {
+    final p = _get('PH');
+    if (p == null) return false;
+    final th = threshold;
+    if (th != null) return p.value < th.minPh || p.value > th.maxPh;
+    return p.value < 6.5 || p.value > 8.5;
+  }
+
+  bool get _turbAlert {
+    final turb = _get('TURB');
+    if (turb == null) return false;
+    final th = threshold;
+    if (th != null) return turb.value < th.minTurbidity || turb.value > th.maxTurbidity;
+    return turb.value > 5;
+  }
+
+  bool get _isAlert => _tempAlert || _phAlert || _turbAlert;
 
   String get _ago {
     if (readings.isEmpty) return '';
@@ -185,7 +212,7 @@ class _PondCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final temp = _get('TEMP');
     final ph = _get('PH');
-    final o2 = _get('OX');
+    final turb = _get('TURB');
     final alert = _isAlert;
 
     return GestureDetector(
@@ -239,20 +266,20 @@ class _PondCard extends StatelessWidget {
             _STile(
               icon: Icons.thermostat_outlined,
               value: temp != null ? '${temp.value.toStringAsFixed(1)}°C' : '--',
-              alert: temp != null && (temp.value < 20 || temp.value > 30),
+              alert: _tempAlert,
             ),
             const SizedBox(width: 8),
             _STile(
               icon: Icons.water_drop_outlined,
               value: ph != null ? ph.value.toStringAsFixed(1) : '--',
               subLabel: 'pH',
-              alert: ph != null && (ph.value < 6.5 || ph.value > 8.5),
+              alert: _phAlert,
             ),
             const SizedBox(width: 8),
             _STile(
-              icon: Icons.air,
-              value: o2 != null ? '${o2.value.toStringAsFixed(1)} mg/L' : '--',
-              alert: o2 != null && o2.value < 5,
+              icon: Icons.water_outlined,
+              value: turb != null ? '${turb.value.toStringAsFixed(1)} NTU' : '--',
+              alert: _turbAlert,
             ),
           ]),
         ]),

@@ -8,7 +8,6 @@ import '../../../infrastructure/auth_provider.dart';
 import '../../../infrastructure/farm_service.dart';
 import '../../../infrastructure/notification_service.dart';
 import '../../../infrastructure/pond_service.dart';
-import '../../components/ponds_average_stats.dart';
 import '../../components/dashboard/dashboard_widgets.dart';
 import '../../widgets/dashboard_layout.dart';
 
@@ -82,8 +81,6 @@ class _DashboardPageState extends State<DashboardPage> {
                     const Text('Resumen de tu sistema acuícola', style: TextStyle(color: kTextSecondary, fontSize: 14)),
                     const SizedBox(height: 24),
                     StatsGrid(activePonds: _ponds.where((p) => p.status == 'ACTIVE').length, totalPonds: _ponds.length, unreadAlerts: _notifications.length),
-                    const SizedBox(height: 24),
-                    PondsAverageStats(ponds: _ponds),
                     const SizedBox(height: 24),
                     RecentAlerts(notifications: _notifications.take(5).toList()),
                     const SizedBox(height: 24),

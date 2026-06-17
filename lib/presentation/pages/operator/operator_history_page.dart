@@ -83,9 +83,9 @@ class _State extends State<OperatorHistoryPage> with SingleTickerProviderStateMi
   }
 
   List<HistoricalReading> get _filteredHistorical {
-    final ox = _allHistorical.where((h) => h.sensorType.toUpperCase().contains('OX')).toList();
-    if (_filterIndex == 3 && (_customStart == null || _customEnd == null)) return ox;
-    return ox.where((h) {
+    final turb = _allHistorical.where((h) => h.sensorType.toUpperCase().contains('TURB')).toList();
+    if (_filterIndex == 3 && (_customStart == null || _customEnd == null)) return turb;
+    return turb.where((h) {
       final dt = DateTime.tryParse(h.periodStart);
       if (dt == null) return false;
       if (_filterIndex == 3) {
@@ -131,7 +131,7 @@ class _State extends State<OperatorHistoryPage> with SingleTickerProviderStateMi
     final t = r.sensorType.toUpperCase();
     if (t.contains('TEMP') && (r.value < 20 || r.value > 30)) return true;
     if (t.contains('PH') && (r.value < 6.5 || r.value > 8.5)) return true;
-    if (t.contains('OX') && r.value < 5) return true;
+    if (t.contains('TURB') && r.value > 5) return true;
     return false;
   }
 
@@ -271,7 +271,7 @@ class _BarChartCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(color: kNavy, borderRadius: BorderRadius.circular(12)),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('TENDENCIA DE OXÍGENO (O2)',
+          const Text('TENDENCIA DE TURBIDEZ',
               style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8),
                   fontWeight: FontWeight.w600, letterSpacing: 0.8)),
           const SizedBox(height: 24),
@@ -293,7 +293,7 @@ class _BarChartCard extends StatelessWidget {
       decoration: BoxDecoration(color: kNavy, borderRadius: BorderRadius.circular(12)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          const Text('TENDENCIA DE OXÍGENO (O2)',
+          const Text('TENDENCIA DE TURBIDEZ',
               style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8),
                   fontWeight: FontWeight.w600, letterSpacing: 0.8)),
           const Spacer(),
@@ -414,11 +414,11 @@ class _ReadingCard extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           _ValueTile(
-            icon: Icons.air,
-            value: reading.sensorType.toUpperCase().contains('OX')
-                ? '${reading.value.toStringAsFixed(1)} mg/L' : '--',
-            label: 'O2',
-            alert: isAlert && reading.sensorType.toUpperCase().contains('OX'),
+            icon: Icons.water_outlined,
+            value: reading.sensorType.toUpperCase().contains('TURB')
+                ? '${reading.value.toStringAsFixed(1)} NTU' : '--',
+            label: 'TURBIDEZ',
+            alert: isAlert && reading.sensorType.toUpperCase().contains('TURB'),
           ),
         ]),
       ]),

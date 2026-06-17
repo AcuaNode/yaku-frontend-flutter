@@ -155,14 +155,14 @@ class _AlertCard extends StatelessWidget {
 
   _AlertStyle get _style {
     final t = notif.type.toUpperCase();
-    if (t.contains('OX') || (notif.isCritical && t.contains('OXYGEN'))) {
+    if (t.contains('TURB')) {
       return _AlertStyle(
         barColor: kError,
         bgColor: const Color(0xFFFEF2F2),
         iconBg: const Color(0xFFFEE2E2),
         icon: Icons.warning_rounded,
         iconColor: kError,
-        title: 'Oxígeno Crítico',
+        title: 'Turbidez Crítica',
         priority: 'Prioridad Alta',
         priorityColor: kError,
         priorityBg: const Color(0xFFFEE2E2),
