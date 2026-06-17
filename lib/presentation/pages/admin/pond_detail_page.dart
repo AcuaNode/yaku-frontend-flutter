@@ -1,9 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Threshold;
 import '../../../config/theme.dart';
 import '../../../domain/pond.dart';
 import '../../../infrastructure/pond_service.dart';
 import '../../../domain/equipment.dart';
 import '../../../infrastructure/equipment_service.dart';
+import '../../../domain/threshold.dart';
+import '../../../infrastructure/threshold_service.dart';
 import '../../widgets/dashboard_layout.dart';
 
 class PondDetailPage extends StatefulWidget {
@@ -18,6 +20,7 @@ class _PondDetailPageState extends State<PondDetailPage> {
   List<SensorReading> _telemetry = [];
   List<Map<String, dynamic>> _operators = [];
   List<Equipment> _pondEquipment = [];
+  Threshold? _threshold;
   bool _loading = true;
 
   @override
@@ -35,12 +38,14 @@ class _PondDetailPageState extends State<PondDetailPage> {
         getOperators(),
         getEquipment(farmId: pondRes.farmId),
       ]);
+      final threshold = await getThresholds(pondRes.species);
       if (mounted) {
         setState(() {
           _pond = pondRes;
           _telemetry = results[0] as List<SensorReading>;
           _operators = results[1] as List<Map<String, dynamic>>;
           _pondEquipment = (results[2] as List<Equipment>).where((e) => e.pondId == widget.pondId).toList();
+          _threshold = threshold;
           _loading = false;
         });
       }
@@ -154,11 +159,29 @@ class _PondDetailPageState extends State<PondDetailPage> {
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: kNavy)),
                       const SizedBox(height: 12),
                       Row(children: [
-                        Expanded(child: _TelemetryCard(label: 'TEMPERATURA', reading: _reading('TEMP'), unit: '°C', min: 10, max: 30, okMin: 20, okMax: 30)),
+                        Expanded(child: _TelemetryCard(
+                          label: 'TEMPERATURA',
+                          reading: _reading('TEMP'),
+                          unit: '°C',
+                          okMin: _threshold?.minTemperature ?? 20,
+                          okMax: _threshold?.maxTemperature ?? 30,
+                        )),
                         const SizedBox(width: 12),
-                        Expanded(child: _TelemetryCard(label: 'PH DEL AGUA', reading: _reading('PH'), unit: '', min: 6.5, max: 8.5, okMin: 6.5, okMax: 8.5)),
+                        Expanded(child: _TelemetryCard(
+                          label: 'PH DEL AGUA',
+                          reading: _reading('PH'),
+                          unit: '',
+                          okMin: _threshold?.minPh ?? 6.5,
+                          okMax: _threshold?.maxPh ?? 8.5,
+                        )),
                         const SizedBox(width: 12),
-                        Expanded(child: _TelemetryCard(label: 'TURBIDEZ', reading: _reading('TURBIDITY'), unit: 'NTU', min: 0, max: 10, okMin: 0, okMax: 5)),
+                        Expanded(child: _TelemetryCard(
+                          label: 'TURBIDEZ',
+                          reading: _reading('TURBIDITY'),
+                          unit: 'NTU',
+                          okMin: _threshold?.minTurbidity ?? 0,
+                          okMax: _threshold?.maxTurbidity ?? 5,
+                        )),
                       ]),
                       const SizedBox(height: 24),
                       _OperatorSection(
@@ -211,14 +234,14 @@ class _TelemetryCard extends StatelessWidget {
   final String label;
   final SensorReading? reading;
   final String unit;
-  final double min, max, okMin, okMax;
-  const _TelemetryCard({required this.label, required this.reading, required this.unit, required this.min, required this.max, required this.okMin, required this.okMax});
+  final double okMin, okMax;
+  const _TelemetryCard({required this.label, required this.reading, required this.unit, required this.okMin, required this.okMax});
 
   @override
   Widget build(BuildContext context) {
     final value = reading?.value ?? 0;
     final isOk = value >= okMin && value <= okMax;
-    final statusLabel = label.contains('TEMP') ? (isOk ? 'ÓPTIMO' : 'ALERTA') : label.contains('PH') ? (isOk ? 'ESTABLE' : 'ALERTA') : (isOk ? 'SALUDABLE' : 'BAJO');
+    final statusLabel = label.contains('TEMP') ? (isOk ? 'ÓPTIMO' : 'ALERTA') : label.contains('PH') ? (isOk ? 'ESTABLE' : 'ALERTA') : (isOk ? 'SALUDABLE' : 'ALERTA');
     final color = isOk ? kPrimary : kError;
 
     return Container(
@@ -231,7 +254,7 @@ class _TelemetryCard extends StatelessWidget {
         const SizedBox(height: 4),
         Text(statusLabel, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
         const SizedBox(height: 8),
-        Text('Rango: $min - $max', style: const TextStyle(fontSize: 10, color: kTextSecondary)),
+        Text('Rango: $okMin - $okMax', style: const TextStyle(fontSize: 10, color: kTextSecondary)),
       ]),
     );
   }
