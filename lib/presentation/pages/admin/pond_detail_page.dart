@@ -35,7 +35,7 @@ class _PondDetailPageState extends State<PondDetailPage> {
       final pondRes = await getPond(widget.pondId);
       final results = await Future.wait([
         getTelemetryStatus(widget.pondId),
-        getOperators(),
+        getOperators(farmId: pondRes.farmId),
         getEquipment(farmId: pondRes.farmId),
       ]);
       final threshold = await getThresholds(pondRes.species);

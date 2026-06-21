@@ -62,8 +62,9 @@ Future<Pond> deassignOperatorFromPond(int pondId, int operatorId) async {
   return Pond.fromJson(res.data as Map<String, dynamic>);
 }
 
-Future<List<Map<String, dynamic>>> getOperators() async {
-  final res = await httpClient.get(ApiEndpoints.usersBase);
+Future<List<Map<String, dynamic>>> getOperators({int? farmId}) async {
+  final endpoint = farmId != null ? ApiEndpoints.usersByFarm(farmId) : ApiEndpoints.usersBase;
+  final res = await httpClient.get(endpoint);
   final list = res.data as List? ?? [];
   return list
       .map((e) => e as Map<String, dynamic>)

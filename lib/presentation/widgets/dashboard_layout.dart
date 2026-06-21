@@ -126,8 +126,10 @@ class _SidebarItem extends StatelessWidget {
         color: selected ? kPrimary.withOpacity(0.15) : Colors.transparent,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: ListTile(
-        dense: true,
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          dense: true,
         leading: Icon(item.icon, color: selected ? kPrimary : const Color(0xFF94A3B8), size: 20),
         title: Text(
           item.label,
@@ -138,6 +140,7 @@ class _SidebarItem extends StatelessWidget {
           ),
         ),
         onTap: () => context.go(item.route),
+        ),
       ),
     );
   }
