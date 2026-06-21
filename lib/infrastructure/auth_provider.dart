@@ -21,11 +21,12 @@ class AuthProvider extends ChangeNotifier {
       final id = await TokenStorage.getUserId();
       _user = User(
         id: id ?? 0,
-        username: info['username'] ?? '',
-        firstName: info['firstName'] ?? '',
-        lastName: info['lastName'] ?? '',
-        email: info['email'] ?? '',
-        role: info['role'] ?? 'ADMIN',
+        username: info['username']?.toString() ?? '',
+        firstName: info['firstName']?.toString() ?? '',
+        lastName: info['lastName']?.toString() ?? '',
+        email: info['email']?.toString() ?? '',
+        role: info['role']?.toString() ?? 'ADMIN',
+        assignedFarmId: info['assignedFarmId'] as int?,
       );
       if (_user!.id != 0) {
         FcmService.initializeAndSendToken(_user!.id);

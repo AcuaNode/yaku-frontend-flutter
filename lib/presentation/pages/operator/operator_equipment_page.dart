@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../config/theme.dart';
 import '../../../infrastructure/equipment_service.dart';
+import '../../../infrastructure/auth_provider.dart';
 import '../../../domain/equipment.dart';
 import '../../widgets/operator_layout.dart';
 
@@ -24,7 +26,9 @@ class _State extends State<OperatorEquipmentPage> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final items = await getEquipment();
+      final auth = context.read<AuthProvider>();
+      final farmId = auth.user?.assignedFarmId;
+      final items = await getEquipment(farmId: farmId);
       if (mounted) setState(() { _equipment = items; _loading = false; });
     } catch (_) {
       if (mounted) setState(() { _loading = false; _error = 'No se pudo cargar el equipamiento'; });

@@ -7,6 +7,7 @@ const _keyFirstName = 'yaku_first_name';
 const _keyLastName = 'yaku_last_name';
 const _keyEmail = 'yaku_email';
 const _keyRole = 'yaku_role';
+const _keyFarmId = 'yaku_farm_id';
 
 class TokenStorage {
   static Future<void> saveSession({
@@ -17,6 +18,7 @@ class TokenStorage {
     required String lastName,
     required String email,
     required String role,
+    int? assignedFarmId,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyToken, token);
@@ -26,6 +28,11 @@ class TokenStorage {
     await prefs.setString(_keyLastName, lastName);
     await prefs.setString(_keyEmail, email);
     await prefs.setString(_keyRole, role);
+    if (assignedFarmId != null) {
+      await prefs.setInt(_keyFarmId, assignedFarmId);
+    } else {
+      await prefs.remove(_keyFarmId);
+    }
   }
 
   static Future<String?> getToken() async {
@@ -38,7 +45,7 @@ class TokenStorage {
     return prefs.getInt(_keyUserId);
   }
 
-  static Future<Map<String, String>> getUserInfo() async {
+  static Future<Map<String, dynamic>> getUserInfo() async {
     final prefs = await SharedPreferences.getInstance();
     return {
       'username': prefs.getString(_keyUsername) ?? '',
@@ -46,6 +53,7 @@ class TokenStorage {
       'lastName': prefs.getString(_keyLastName) ?? '',
       'email': prefs.getString(_keyEmail) ?? '',
       'role': prefs.getString(_keyRole) ?? '',
+      'assignedFarmId': prefs.getInt(_keyFarmId),
     };
   }
 

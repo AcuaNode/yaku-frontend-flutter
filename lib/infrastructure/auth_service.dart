@@ -51,6 +51,7 @@ Future<User> login(String username, String password) async {
   final firstName = (user['firstName'] ?? '').toString();
   final lastName = (user['lastName'] ?? '').toString();
   final email = (user['email'] ?? '').toString();
+  final assignedFarmId = user['assignedFarmId'] != null ? int.tryParse(user['assignedFarmId'].toString()) : null;
 
   await TokenStorage.saveSession(
     token: token,
@@ -60,9 +61,10 @@ Future<User> login(String username, String password) async {
     lastName: lastName,
     email: email,
     role: role,
+    assignedFarmId: assignedFarmId,
   );
 
-  return User(id: id, username: username, firstName: firstName, lastName: lastName, email: email, role: role);
+  return User(id: id, username: username, firstName: firstName, lastName: lastName, email: email, role: role, assignedFarmId: assignedFarmId);
 }
 
 Future<User> register({

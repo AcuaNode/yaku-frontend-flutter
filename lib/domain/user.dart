@@ -5,6 +5,7 @@ class User {
   final String lastName;
   final String email;
   final String role;
+  final int? assignedFarmId;
 
   const User({
     required this.id,
@@ -13,6 +14,7 @@ class User {
     required this.lastName,
     required this.email,
     required this.role,
+    this.assignedFarmId,
   });
 
   String get fullName => '$firstName $lastName'.trim();

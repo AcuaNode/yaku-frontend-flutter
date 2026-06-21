@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../config/theme.dart';
 import '../../../infrastructure/pond_service.dart';
 import '../../../infrastructure/equipment_service.dart';
+import '../../../infrastructure/auth_provider.dart';
 import '../../../domain/pond.dart';
 import '../../../domain/equipment.dart';
 import '../../widgets/operator_layout.dart';
@@ -31,11 +33,14 @@ class _State extends State<OperatorPondDetailPage> {
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
+      final auth = context.read<AuthProvider>();
+      final farmId = auth.user?.assignedFarmId;
+
       final results = await Future.wait([
         getPond(widget.pondId),
         getTelemetryStatus(widget.pondId),
         getTelemetryHistorical(widget.pondId),
-        getEquipment(),
+        getEquipment(farmId: farmId),
       ]);
       if (mounted) {
         setState(() {
